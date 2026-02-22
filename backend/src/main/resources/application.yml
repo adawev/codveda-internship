@@ -13,3 +13,9 @@ spring:
         format_sql: true
 server:
   port: 8080
+
+app:
+  jwt:
+    secret: codveda-jwt-secret-key-please-change-123456
+    access-expiration-ms: 900000
+    refresh-expiration-ms: 604800000

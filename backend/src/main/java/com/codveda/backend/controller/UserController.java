@@ -2,24 +2,23 @@ package com.codveda.backend.controller;
 
 import com.codveda.backend.model.User;
 import com.codveda.backend.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-     private UserService userService;
+    private final UserService userService;
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
+    public User createUser(@Valid @RequestBody User user) {
         return userService.save(user);
     }
 
@@ -36,12 +35,14 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
         return userService.findById(id)
                 .map(existing -> {
                     existing.setName(user.getName());
                     existing.setEmail(user.getEmail());
-                    existing.setPassword(user.getPassword());
+                    if (user.getPassword() != null && !user.getPassword().isBlank()) {
+                        existing.setPassword(user.getPassword());
+                    }
                     return ResponseEntity.ok(userService.save(existing));
                 }).orElse(ResponseEntity.notFound().build());
     }
