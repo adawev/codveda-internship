@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
 import AdminDashboard from "./pages/AdminDashboard";
+import Products from "./pages/Products";
 import ProtectedRoute from "./ProtectedRoute";
 import { useAuth } from "./AuthContext";
 
@@ -15,10 +16,11 @@ function App() {
     <Router>
       <div className="app">
         <header className="nav">
-          <h1>Codveda Shop</h1>
+          <h1 className="brand">Codveda Shop</h1>
           <nav>
-            <Link to="/cart">Cart</Link>
-            <Link to="/orders">Orders</Link>
+            <Link to="/">Products</Link>
+            {isAuthenticated && <Link to="/cart">Cart</Link>}
+            {isAuthenticated && <Link to="/orders">Orders</Link>}
             {!isAuthenticated && <Link to="/login">Login</Link>}
             {!isAuthenticated && <Link to="/register">Register</Link>}
             {user?.role === "ADMIN" && <Link to="/admin">Admin</Link>}
@@ -32,6 +34,7 @@ function App() {
 
         <main>
           <Routes>
+            <Route path="/" element={<Products />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route
@@ -58,7 +61,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<Login />} />
+            <Route path="*" element={<Products />} />
           </Routes>
         </main>
       </div>

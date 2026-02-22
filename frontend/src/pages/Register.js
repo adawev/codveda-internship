@@ -24,30 +24,45 @@ const Register = () => {
 
   return (
     <div className="page">
-      <h2>Register</h2>
+      <div className="page-header">
+        <div>
+          <p className="eyebrow">Get started</p>
+          <h2>Create your account</h2>
+          <p className="note">Join to build your cart and track orders.</p>
+        </div>
+      </div>
       <form onSubmit={handleSubmit} className="form">
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          required
-        />
-        <button type="submit">Register</button>
+        <label className="field">
+          <span>Name</span>
+          <input
+            type="text"
+            placeholder="Your name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
+          />
+        </label>
+        <label className="field">
+          <span>Email</span>
+          <input
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+        </label>
+        <label className="field">
+          <span>Password</span>
+          <input
+            type="password"
+            placeholder="Choose a password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
+        </label>
+        <button type="submit">Create account</button>
         {message && <p className="note">{message}</p>}
       </form>
     </div>
