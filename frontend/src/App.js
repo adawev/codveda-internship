@@ -1,10 +1,68 @@
-import Users from "./Components/Users";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Cart from "./pages/Cart";
+import Orders from "./pages/Orders";
+import AdminDashboard from "./pages/AdminDashboard";
+import ProtectedRoute from "./ProtectedRoute";
+import { useAuth } from "./AuthContext";
 
 function App() {
+  const { isAuthenticated, user, logout } = useAuth();
+
   return (
-    <div className="App">
-      <Users/>
-    </div>
+    <Router>
+      <div className="app">
+        <header className="nav">
+          <h1>Codveda Shop</h1>
+          <nav>
+            <Link to="/cart">Cart</Link>
+            <Link to="/orders">Orders</Link>
+            {!isAuthenticated && <Link to="/login">Login</Link>}
+            {!isAuthenticated && <Link to="/register">Register</Link>}
+            {user?.role === "ADMIN" && <Link to="/admin">Admin</Link>}
+            {isAuthenticated && (
+              <button type="button" onClick={logout}>
+                Logout
+              </button>
+            )}
+          </nav>
+        </header>
+
+        <main>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+              path="/cart"
+              element={
+                <ProtectedRoute role="USER">
+                  <Cart />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <ProtectedRoute role="USER">
+                  <Orders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute role="ADMIN">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Login />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 
