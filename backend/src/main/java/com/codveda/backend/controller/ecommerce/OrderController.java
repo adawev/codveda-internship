@@ -2,6 +2,7 @@ package com.codveda.backend.controller.ecommerce;
 
 import com.codveda.backend.controller.ecommerce.dto.OrderItemResponse;
 import com.codveda.backend.controller.ecommerce.dto.OrderResponse;
+import com.codveda.backend.controller.dto.order.CreateOrderRequest;
 import com.codveda.backend.controller.dto.order.UpdateOrderStatusRequest;
 import com.codveda.backend.exception.UnauthorizedException;
 import com.codveda.backend.model.User;
@@ -32,9 +33,9 @@ public class OrderController {
     }
 
     @PostMapping
-    public OrderResponse createOrder() {
+    public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request) {
         User user = getCurrentUser();
-        Order order = orderService.createOrder(user);
+        Order order = orderService.createOrder(user, request);
         return toResponse(order);
     }
 
@@ -80,6 +81,9 @@ public class OrderController {
                 order.getId(),
                 order.getUser().getEmail(),
                 order.getTotalPrice(),
+                order.getShippingAddress(),
+                order.getPaymentMethod(),
+                order.getTotalAmount(),
                 order.getStatus(),
                 order.getCreatedAt(),
                 items

@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -35,7 +36,11 @@ public class JwtService {
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return generateToken(Map.of("token_type", "refresh"), userDetails, refreshExpirationMs);
+        return generateRefreshToken(userDetails, UUID.randomUUID().toString());
+    }
+
+    public String generateRefreshToken(UserDetails userDetails, String tokenId) {
+        return generateToken(Map.of("token_type", "refresh", "jti", tokenId), userDetails, refreshExpirationMs);
     }
 
     public String extractUsername(String token) {
@@ -44,6 +49,14 @@ public class JwtService {
 
     public String extractTokenType(String token) {
         return extractClaim(token, claims -> claims.get("token_type", String.class));
+    }
+
+    public String extractTokenId(String token) {
+        return extractClaim(token, claims -> claims.getId() != null ? claims.getId() : claims.get("jti", String.class));
+    }
+
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
@@ -70,6 +83,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .setClaims(extraClaims)
+                .setId((String) extraClaims.getOrDefault("jti", null))
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(now)
                 .setExpiration(expiry)

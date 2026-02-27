@@ -36,6 +36,15 @@ public class Order {
     @Column(nullable = false)
     private BigDecimal totalPrice;
 
+    @Column(nullable = false, length = 1000)
+    private String shippingAddress;
+
+    @Column(nullable = false, length = 50)
+    private String paymentMethod;
+
+    @Column(nullable = false)
+    private BigDecimal totalAmount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;

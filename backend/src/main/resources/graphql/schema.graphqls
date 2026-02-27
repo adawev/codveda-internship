@@ -4,7 +4,7 @@ type Query {
 }
 
 type Mutation {
-  createOrder: Order!
+  createOrder(input: CreateOrderInput!): Order!
   updateProduct(id: ID!, input: UpdateProductInput!): Product!
 }
 
@@ -28,6 +28,9 @@ type Product {
 type Order {
   id: ID!
   totalPrice: Float!
+  shippingAddress: String!
+  paymentMethod: String!
+  totalAmount: Float!
   status: String!
   createdAt: String!
   items: [OrderItem!]!
@@ -47,4 +50,10 @@ input UpdateProductInput {
   price: Float
   stock: Int
   imageUrl: String
+}
+
+input CreateOrderInput {
+  shippingAddress: String!
+  paymentMethod: String!
+  totalAmount: Float!
 }

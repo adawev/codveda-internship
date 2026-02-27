@@ -8,6 +8,8 @@ server:
   port: ${SERVER_PORT:8080}
 
 app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
   jwt:
     secret: ${APP_JWT_SECRET:${random.uuid}${random.uuid}}
     access-expiration-ms: ${APP_JWT_ACCESS_EXPIRATION_MS:900000}

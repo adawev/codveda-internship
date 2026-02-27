@@ -2,9 +2,11 @@ package com.codveda.backend.graphql;
 
 import com.codveda.backend.controller.dto.product.ProductPageResponse;
 import com.codveda.backend.controller.dto.product.ProductResponse;
+import com.codveda.backend.controller.dto.order.CreateOrderRequest;
 import com.codveda.backend.controller.ecommerce.dto.OrderItemResponse;
 import com.codveda.backend.controller.ecommerce.dto.OrderResponse;
 import com.codveda.backend.exception.UnauthorizedException;
+import com.codveda.backend.graphql.dto.CreateOrderInput;
 import com.codveda.backend.graphql.dto.UpdateProductInput;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.order.Order;
@@ -62,8 +64,12 @@ public class ShopGraphqlController {
 
     @MutationMapping
     @PreAuthorize("hasRole('USER')")
-    public OrderResponse createOrder() {
-        return toOrderResponse(orderService.createOrder(getCurrentUser()));
+    public OrderResponse createOrder(@Valid @Argument CreateOrderInput input) {
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setShippingAddress(input.getShippingAddress());
+        request.setPaymentMethod(input.getPaymentMethod());
+        request.setTotalAmount(input.getTotalAmount());
+        return toOrderResponse(orderService.createOrder(getCurrentUser(), request));
     }
 
     @MutationMapping
@@ -119,6 +125,9 @@ public class ShopGraphqlController {
                 order.getId(),
                 order.getUser().getEmail(),
                 order.getTotalPrice(),
+                order.getShippingAddress(),
+                order.getPaymentMethod(),
+                order.getTotalAmount(),
                 order.getStatus(),
                 order.getCreatedAt(),
                 items

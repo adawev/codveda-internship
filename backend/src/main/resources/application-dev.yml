@@ -10,3 +10,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+app:
+  admin:
+    password: ${APP_ADMIN_PASSWORD}

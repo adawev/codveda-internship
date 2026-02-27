@@ -9,8 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
+@Profile("dev")
 public class AdminSeederConfig {
     private static final Logger log = LoggerFactory.getLogger(AdminSeederConfig.class);
 
@@ -19,7 +21,7 @@ public class AdminSeederConfig {
             UserService userService,
             @Value("${app.admin.name:Default Admin}") String adminName,
             @Value("${app.admin.email:admin@codveda.com}") String adminEmail,
-            @Value("${app.admin.password:Admin@12345}") String adminPassword
+            @Value("${app.admin.password}") String adminPassword
     ) {
         return args -> {
             userService.findByEmail(adminEmail).ifPresentOrElse(existing -> {

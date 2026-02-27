@@ -44,6 +44,9 @@ public class Product {
     @PositiveOrZero
     private Integer stock;
 
+    @Version
+    private Long version;
+
     @Size(max = 1000)
     @Column(length = 1000)
     private String imageUrl;

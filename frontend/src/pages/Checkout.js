@@ -43,8 +43,9 @@ const Checkout = () => {
     setIsLoading(true);
     try {
       await api.post("/api/orders", {
-        shipping: { fullName, address, city, zipCode },
+        shippingAddress: `${fullName}, ${address}, ${city}, ${zipCode}`,
         paymentMethod,
+        totalAmount: Number(total.toFixed(2)),
       });
       await refreshCart();
       toast({ title: "Order placed", description: "Your order was created.", variant: "success" });

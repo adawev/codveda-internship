@@ -8,6 +8,38 @@ const api = axios.create({
   baseURL,
 });
 
+const clearSessionAndLogout = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("userId");
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth:logout"));
+  }
+};
+
+const shouldForceLogoutOn403 = (error) => {
+  const path = error.config?.url || "";
+  if (path.includes("/api/auth/login") || path.includes("/api/auth/register") || path.includes("/api/auth/refresh")) {
+    return false;
+  }
+
+  const hasToken = !!localStorage.getItem("accessToken");
+  if (!hasToken) {
+    return false;
+  }
+
+  const message = String(error.response?.data?.message || "").toLowerCase();
+  return (
+    message.includes("user not found") ||
+    message.includes("authentication required") ||
+    message.includes("invalid jwt") ||
+    message.includes("unauthorized")
+  );
+};
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
   if (token) {
@@ -38,15 +70,7 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(original);
       } catch (refreshError) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("userEmail");
-        localStorage.removeItem("userRole");
-        localStorage.removeItem("userId");
-
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("auth:logout"));
-        }
+        clearSessionAndLogout();
 
         emitToast({
           title: "Session expired",
@@ -56,6 +80,16 @@ api.interceptors.response.use(
 
         return Promise.reject(refreshError);
       }
+    }
+
+    if (status === 403 && shouldForceLogoutOn403(error)) {
+      clearSessionAndLogout();
+      emitToast({
+        title: "Session invalid",
+        description: "Your account session is no longer valid. Please sign in again.",
+        variant: "warning",
+      });
+      return Promise.reject(error);
     }
 
     const status = error.response?.status;

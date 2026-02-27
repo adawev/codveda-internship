@@ -2,6 +2,7 @@ package com.codveda.backend.service.ecommerce;
 
 import com.codveda.backend.exception.BadRequestException;
 import com.codveda.backend.exception.NotFoundException;
+import com.codveda.backend.controller.dto.order.CreateOrderRequest;
 import com.codveda.backend.controller.ecommerce.dto.OrderStatusEvent;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.math.BigDecimal;
 
@@ -40,7 +42,7 @@ public class OrderService {
     }
 
     @Transactional
-    public Order createOrder(User user) {
+    public Order createOrder(User user, CreateOrderRequest request) {
         Cart cart = cartService.getOrCreateCart(user);
         if (cart.getCartItems().isEmpty()) {
             throw new BadRequestException("Cart is empty");
@@ -49,6 +51,8 @@ public class OrderService {
         Order order = new Order();
         order.setUser(user);
         order.setStatus(OrderStatus.PENDING);
+        order.setShippingAddress(request.getShippingAddress());
+        order.setPaymentMethod(request.getPaymentMethod());
 
         BigDecimal total = BigDecimal.ZERO;
         for (CartItem cartItem : cart.getCartItems()) {
@@ -58,7 +62,11 @@ public class OrderService {
             }
 
             product.setStock(product.getStock() - cartItem.getQuantity());
-            productRepository.save(product);
+            try {
+                productRepository.saveAndFlush(product);
+            } catch (ObjectOptimisticLockingFailureException ex) {
+                throw new BadRequestException("Stock changed during checkout. Please retry.");
+            }
 
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
@@ -70,8 +78,16 @@ public class OrderService {
             total = total.add(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
 
+        if (request.getTotalAmount().compareTo(total) != 0) {
+            throw new BadRequestException("totalAmount does not match cart total");
+        }
         order.setTotalPrice(total);
+        order.setTotalAmount(request.getTotalAmount());
         Order saved = orderRepository.save(order);
+        messagingTemplate.convertAndSend(
+                "/topic/orders/" + saved.getUser().getId(),
+                new OrderStatusEvent(saved.getId(), saved.getStatus())
+        );
         cartService.clearCart(cart);
         return saved;
     }
