@@ -1,0 +1,50 @@
+type Query {
+  getProducts(page: Int!, size: Int!): ProductPage!
+  getUserOrders: [Order!]!
+}
+
+type Mutation {
+  createOrder: Order!
+  updateProduct(id: ID!, input: UpdateProductInput!): Product!
+}
+
+type ProductPage {
+  content: [Product!]!
+  page: Int!
+  size: Int!
+  totalElements: Int!
+  totalPages: Int!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  price: Float!
+  stock: Int!
+  imageUrl: String
+}
+
+type Order {
+  id: ID!
+  totalPrice: Float!
+  status: String!
+  createdAt: String!
+  items: [OrderItem!]!
+}
+
+type OrderItem {
+  id: ID!
+  productId: ID!
+  productName: String!
+  quantity: Int!
+  price: Float!
+}
+
+input UpdateProductInput {
+  name: String
+  description: String
+  price: Float
+  stock: Int
+  imageUrl: String
+}

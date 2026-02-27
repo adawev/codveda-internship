@@ -1,5 +1,6 @@
 package com.codveda.backend.service.ecommerce;
 
+import com.codveda.backend.exception.NotFoundException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
 import com.codveda.backend.model.cart.CartItem;
@@ -42,7 +43,7 @@ public class CartService {
     public Cart addToCart(User user, Long productId, int quantity) {
         Cart cart = getOrCreateCart(user);
         Product product = productRepository.findById(productId)
-                .orElseThrow();
+                .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
 
         CartItem existingItem = cart.getCartItems().stream()
                 .filter(item -> item.getProduct().getId().equals(productId))
@@ -69,7 +70,7 @@ public class CartService {
     public void removeItem(User user, Long itemId) {
         Cart cart = getOrCreateCart(user);
         CartItem item = cartItemRepository.findByIdAndCartId(itemId, cart.getId())
-                .orElseThrow();
+                .orElseThrow(() -> new NotFoundException("Cart item not found: " + itemId));
         cart.getCartItems().removeIf(cartItem -> cartItem.getId().equals(item.getId()));
         cartItemRepository.delete(item);
     }

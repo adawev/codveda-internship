@@ -1,5 +1,7 @@
 package com.codveda.backend.service.ecommerce;
 
+import com.codveda.backend.exception.BadRequestException;
+import com.codveda.backend.exception.NotFoundException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
 import com.codveda.backend.model.cart.CartItem;
@@ -9,33 +11,38 @@ import com.codveda.backend.model.order.OrderItem;
 import com.codveda.backend.model.product.Product;
 import com.codveda.backend.repository.OrderRepository;
 import com.codveda.backend.repository.ProductRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final CartService cartService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public OrderService(
             OrderRepository orderRepository,
             ProductRepository productRepository,
-            CartService cartService
+            CartService cartService,
+            SimpMessagingTemplate messagingTemplate
     ) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.cartService = cartService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Transactional
     public Order createOrder(User user) {
         Cart cart = cartService.getOrCreateCart(user);
         if (cart.getCartItems().isEmpty()) {
-            throw new IllegalStateException("Cart is empty");
+            throw new BadRequestException("Cart is empty");
         }
 
         Order order = new Order();
@@ -46,7 +53,7 @@ public class OrderService {
         for (CartItem cartItem : cart.getCartItems()) {
             Product product = cartItem.getProduct();
             if (product.getStock() < cartItem.getQuantity()) {
-                throw new IllegalStateException("Insufficient stock for product: " + product.getName());
+                throw new BadRequestException("Insufficient stock for product: " + product.getName());
             }
 
             product.setStock(product.getStock() - cartItem.getQuantity());
@@ -69,9 +76,22 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<Order> findOrders(User user) {
-        List<Order> orders = orderRepository.findAllByUser(user);
+    public Page<Order> findOrders(User user, Pageable pageable) {
+        Page<Order> orders = orderRepository.findAllByUser(user, pageable);
         orders.forEach(order -> order.getOrderItems().size());
         return orders;
+    }
+
+    @Transactional
+    public Order updateOrderStatus(Long orderId, OrderStatus status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
+        order.setStatus(status);
+        Order saved = orderRepository.save(order);
+        messagingTemplate.convertAndSend(
+                "/topic/orders/" + saved.getUser().getId(),
+                saved.getStatus().name()
+        );
+        return saved;
     }
 }

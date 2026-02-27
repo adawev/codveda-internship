@@ -2,11 +2,17 @@ package com.codveda.backend.controller.ecommerce;
 
 import com.codveda.backend.controller.ecommerce.dto.OrderItemResponse;
 import com.codveda.backend.controller.ecommerce.dto.OrderResponse;
+import com.codveda.backend.controller.dto.order.UpdateOrderStatusRequest;
+import com.codveda.backend.exception.UnauthorizedException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.order.Order;
 import com.codveda.backend.model.order.OrderItem;
 import com.codveda.backend.service.UserService;
 import com.codveda.backend.service.ecommerce.OrderService;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -32,17 +38,24 @@ public class OrderController {
     }
 
     @GetMapping
-    public List<OrderResponse> listOrders() {
+    public Page<OrderResponse> listOrders(Pageable pageable) {
         User user = getCurrentUser();
-        return orderService.findOrders(user).stream()
-                .map(this::toResponse)
-                .toList();
+        return orderService.findOrders(user, pageable).map(this::toResponse);
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public OrderResponse updateOrderStatus(@PathVariable Long id, @Valid @RequestBody UpdateOrderStatusRequest request) {
+        return toResponse(orderService.updateOrderStatus(id, request.getStatus()));
     }
 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            throw new UnauthorizedException("Authentication required");
+        }
         String email = authentication.getName();
-        return userService.findByEmail(email).orElseThrow();
+        return userService.findByEmailOrThrow(email);
     }
 
     private OrderResponse toResponse(Order order) {

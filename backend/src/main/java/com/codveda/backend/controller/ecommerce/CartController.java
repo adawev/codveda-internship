@@ -3,6 +3,7 @@ package com.codveda.backend.controller.ecommerce;
 import com.codveda.backend.controller.ecommerce.dto.AddToCartRequest;
 import com.codveda.backend.controller.ecommerce.dto.CartItemResponse;
 import com.codveda.backend.controller.ecommerce.dto.CartResponse;
+import com.codveda.backend.exception.UnauthorizedException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
 import com.codveda.backend.model.cart.CartItem;
@@ -50,8 +51,11 @@ public class CartController {
 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            throw new UnauthorizedException("Authentication required");
+        }
         String email = authentication.getName();
-        return userService.findByEmail(email).orElseThrow();
+        return userService.findByEmailOrThrow(email);
     }
 
     private CartResponse toResponse(Cart cart) {
