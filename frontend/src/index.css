@@ -36,3 +36,11 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+.admin-shell h1,
+.admin-shell h2,
+.admin-shell h3,
+.admin-shell h4 {
+  font-family: "Manrope", sans-serif;
+  letter-spacing: normal;
+}

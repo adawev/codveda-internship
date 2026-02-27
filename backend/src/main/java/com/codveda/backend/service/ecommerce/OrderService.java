@@ -83,6 +83,13 @@ public class OrderService {
         return orders;
     }
 
+    @Transactional(readOnly = true)
+    public Page<Order> findAllOrders(Pageable pageable) {
+        Page<Order> orders = orderRepository.findAll(pageable);
+        orders.forEach(order -> order.getOrderItems().size());
+        return orders;
+    }
+
     @Transactional
     public Order updateOrderStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId)
@@ -94,5 +101,13 @@ public class OrderService {
                 new OrderStatusEvent(saved.getId(), saved.getStatus())
         );
         return saved;
+    }
+
+    @Transactional
+    public void deleteOrder(Long orderId) {
+        if (!orderRepository.existsById(orderId)) {
+            throw new NotFoundException("Order not found: " + orderId);
+        }
+        orderRepository.deleteById(orderId);
     }
 }

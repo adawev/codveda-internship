@@ -23,4 +23,6 @@ public class ProductUpdateRequest {
 
     @Size(max = 1000)
     private String imageUrl;
+
+    private Boolean active;
 }

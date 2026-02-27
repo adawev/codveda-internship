@@ -25,4 +25,6 @@ public class ProductCreateRequest {
 
     @Size(max = 1000)
     private String imageUrl;
+
+    private Boolean active;
 }

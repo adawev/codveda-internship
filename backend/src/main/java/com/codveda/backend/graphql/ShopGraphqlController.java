@@ -106,6 +106,7 @@ public class ShopGraphqlController {
                 product.getPrice(),
                 product.getStock(),
                 product.getImageUrl(),
+                product.getActive(),
                 product.getCreatedAt()
         );
     }
@@ -116,6 +117,7 @@ public class ShopGraphqlController {
                 .toList();
         return new OrderResponse(
                 order.getId(),
+                order.getUser().getEmail(),
                 order.getTotalPrice(),
                 order.getStatus(),
                 order.getCreatedAt(),

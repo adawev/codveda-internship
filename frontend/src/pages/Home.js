@@ -39,8 +39,12 @@ const Home = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const response = await api.get("/api/products?page=0&size=8&sort=createdAt,desc");
-      setProducts(response.data.content ?? []);
+      try {
+        const response = await api.get("/api/products?page=0&size=8&sort=createdAt,desc");
+        setProducts(response.data.content ?? []);
+      } catch (error) {
+        // Handled by global API interceptor toast.
+      }
     };
 
     fetchProducts();
@@ -59,9 +63,13 @@ const Home = () => {
 
   const onAddToCart = async (productId) => {
     const quantity = quantities[productId] ?? 1;
-    await api.post("/api/cart/items", { productId, quantity });
-    await refreshCart();
-    toast({ title: "Added", description: "Item added to your cart.", variant: "success" });
+    try {
+      await api.post("/api/cart/items", { productId, quantity });
+      await refreshCart();
+      toast({ title: "Added", description: "Item added to your cart.", variant: "success" });
+    } catch (error) {
+      // Handled by global API interceptor toast.
+    }
   };
 
   return (

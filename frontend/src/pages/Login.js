@@ -5,6 +5,7 @@ import InputField from "../components/form/InputField";
 import PasswordField from "../components/form/PasswordField";
 import SubmitButton from "../components/form/SubmitButton";
 import { useToast } from "../components/ui/use-toast";
+import { getErrorMessage } from "../services/errorMapper";
 
 const Login = () => {
   const { login } = useAuth();
@@ -19,9 +20,15 @@ const Login = () => {
     event.preventDefault();
     setIsLoading(true);
     try {
-      await login(email, password);
+      const result = await login(email, password);
       toast({ title: "Logged in", description: "Welcome back.", variant: "success" });
-      navigate("/");
+      navigate(result?.role === "ADMIN" ? "/admin" : "/");
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

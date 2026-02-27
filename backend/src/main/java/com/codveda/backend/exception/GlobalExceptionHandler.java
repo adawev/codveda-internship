@@ -2,6 +2,7 @@ package com.codveda.backend.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -60,6 +61,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+        String rootMessage = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        if (rootMessage != null && rootMessage.toLowerCase().contains("value too long")) {
+            return build(HttpStatus.BAD_REQUEST, "One of the fields is too long.", request);
+        }
+        return build(HttpStatus.BAD_REQUEST, "Invalid data provided.", request);
     }
 
     @ExceptionHandler(Exception.class)

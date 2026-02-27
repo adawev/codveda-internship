@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class OrderResponse {
     private Long id;
+    private String userEmail;
     private BigDecimal totalPrice;
     private OrderStatus status;
     private LocalDateTime createdAt;

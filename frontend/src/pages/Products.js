@@ -37,6 +37,8 @@ const Products = () => {
       try {
         const response = await api.get("/api/products?page=0&size=200&sort=createdAt,desc");
         setProducts(response.data.content ?? []);
+      } catch (error) {
+        // Handled by global API interceptor toast.
       } finally {
         setLoading(false);
       }
@@ -95,9 +97,13 @@ const Products = () => {
 
   const onAddToCart = async (productId) => {
     const quantity = quantities[productId] ?? 1;
-    await api.post("/api/cart/items", { productId, quantity });
-    await refreshCart();
-    toast({ title: "Added", description: "Item added to cart.", variant: "success" });
+    try {
+      await api.post("/api/cart/items", { productId, quantity });
+      await refreshCart();
+      toast({ title: "Added", description: "Item added to cart.", variant: "success" });
+    } catch (error) {
+      // Handled by global API interceptor toast.
+    }
   };
 
   return (

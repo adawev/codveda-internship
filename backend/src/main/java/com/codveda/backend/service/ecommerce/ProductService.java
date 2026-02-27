@@ -29,6 +29,11 @@ public class ProductService {
         return productRepository.findAll(pageable);
     }
 
+    @Cacheable("products")
+    public Page<Product> findActive(Pageable pageable) {
+        return productRepository.findAllByActiveTrue(pageable);
+    }
+
     public Optional<Product> findById(Long id) {
         return productRepository.findById(id);
     }

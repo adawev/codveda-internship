@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,10 +44,23 @@ public class OrderController {
         return orderService.findOrders(user, pageable).map(this::toResponse);
     }
 
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<OrderResponse> listOrdersForAdmin(Pageable pageable) {
+        return orderService.findAllOrders(pageable).map(this::toResponse);
+    }
+
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public OrderResponse updateOrderStatus(@PathVariable Long id, @Valid @RequestBody UpdateOrderStatusRequest request) {
         return toResponse(orderService.updateOrderStatus(id, request.getStatus()));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+        orderService.deleteOrder(id);
+        return ResponseEntity.noContent().build();
     }
 
     private User getCurrentUser() {
@@ -64,6 +78,7 @@ public class OrderController {
                 .toList();
         return new OrderResponse(
                 order.getId(),
+                order.getUser().getEmail(),
                 order.getTotalPrice(),
                 order.getStatus(),
                 order.getCreatedAt(),

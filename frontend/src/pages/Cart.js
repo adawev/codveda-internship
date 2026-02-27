@@ -18,6 +18,8 @@ const Cart = () => {
     try {
       const response = await api.get("/api/cart");
       setCart(response.data);
+    } catch (error) {
+      // Handled by global API interceptor toast.
     } finally {
       setLoading(false);
     }
@@ -43,6 +45,8 @@ const Cart = () => {
       }
       await fetchCart();
       await refreshCart();
+    } catch (error) {
+      // Handled by global API interceptor toast.
     } finally {
       setUpdatingId(null);
     }
@@ -55,6 +59,8 @@ const Cart = () => {
       await fetchCart();
       await refreshCart();
       toast({ title: "Removed", description: "Item removed from cart.", variant: "info" });
+    } catch (error) {
+      // Handled by global API interceptor toast.
     } finally {
       setUpdatingId(null);
     }

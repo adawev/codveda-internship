@@ -21,8 +21,12 @@ const Checkout = () => {
 
   useEffect(() => {
     const fetchCart = async () => {
-      const response = await api.get("/api/cart");
-      setCart(response.data || { items: [] });
+      try {
+        const response = await api.get("/api/cart");
+        setCart(response.data || { items: [] });
+      } catch (error) {
+        // Handled by global API interceptor toast.
+      }
     };
 
     fetchCart();
@@ -45,6 +49,8 @@ const Checkout = () => {
       await refreshCart();
       toast({ title: "Order placed", description: "Your order was created.", variant: "success" });
       setTimeout(() => navigate("/orders"), 1000);
+    } catch (error) {
+      // Handled by global API interceptor toast.
     } finally {
       setIsLoading(false);
     }

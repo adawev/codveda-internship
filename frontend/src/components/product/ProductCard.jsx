@@ -2,17 +2,19 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { normalizeImageUrl } from "../../lib/imageUrl";
 
 const ProductCard = ({ product, quantity, onQuantityChange, onAddToCart, isAuthenticated }) => {
   const rating = ((Number(product.id) % 5) + 1).toFixed(1);
   const inStock = (product.stock ?? 0) > 0;
+  const imageUrl = normalizeImageUrl(product.imageUrl);
 
   return (
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <Link to={`/shop/${product.id}`} className="block aspect-square bg-slate-100">
-        {product.imageUrl ? (
+        {imageUrl ? (
           <img
-            src={product.imageUrl}
+            src={imageUrl}
             alt={product.name}
             loading="lazy"
             className="h-full w-full object-cover"

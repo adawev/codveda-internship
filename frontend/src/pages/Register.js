@@ -23,6 +23,8 @@ const Register = () => {
       await register(name, email, password);
       toast({ title: "Account created", description: "Redirecting to login.", variant: "success" });
       setTimeout(() => navigate("/login"), 1000);
+    } catch (error) {
+      // Handled by global API interceptor toast.
     } finally {
       setIsLoading(false);
     }

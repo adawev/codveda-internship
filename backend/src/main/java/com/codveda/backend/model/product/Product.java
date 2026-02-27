@@ -44,13 +44,21 @@ public class Product {
     @PositiveOrZero
     private Integer stock;
 
+    @Size(max = 1000)
+    @Column(length = 1000)
     private String imageUrl;
+
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private Boolean active;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     void onCreate() {
+        if (active == null) {
+            active = true;
+        }
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }

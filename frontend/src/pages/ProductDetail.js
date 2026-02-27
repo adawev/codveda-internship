@@ -5,6 +5,7 @@ import { useAuth } from "../AuthContext";
 import { useCart } from "../CartContext";
 import { useToast } from "../components/ui/use-toast";
 import { Button } from "../components/ui/button";
+import { normalizeImageUrl } from "../lib/imageUrl";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -23,6 +24,8 @@ const ProductDetail = () => {
       try {
         const response = await api.get(`/api/products/${id}`);
         setProduct(response.data);
+      } catch (error) {
+        // Handled by global API interceptor toast.
       } finally {
         setLoading(false);
       }
@@ -40,12 +43,17 @@ const ProductDetail = () => {
   }
 
   const inStock = (product.stock ?? 0) > 0;
-  const images = [product.imageUrl, product.imageUrl, product.imageUrl].filter(Boolean);
+  const normalizedImage = normalizeImageUrl(product.imageUrl);
+  const images = [normalizedImage, normalizedImage, normalizedImage].filter(Boolean);
 
   const addToCart = async () => {
-    await api.post("/api/cart/items", { productId: product.id, quantity });
-    await refreshCart();
-    toast({ title: "Added", description: "Product added to cart.", variant: "success" });
+    try {
+      await api.post("/api/cart/items", { productId: product.id, quantity });
+      await refreshCart();
+      toast({ title: "Added", description: "Product added to cart.", variant: "success" });
+    } catch (error) {
+      // Handled by global API interceptor toast.
+    }
   };
 
   return (

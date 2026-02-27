@@ -2,6 +2,8 @@ import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import AppLayout from "./components/layout/AppLayout";
+import { useAuth } from "./AuthContext";
+import AdminLayout from "./layouts/AdminLayout";
 
 const Home = lazy(() => import("./pages/Home"));
 const Shop = lazy(() => import("./pages/Products"));
@@ -13,14 +15,34 @@ const Cart = lazy(() => import("./pages/Cart"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Profile = lazy(() => import("./pages/Profile"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+
+const StorefrontGuard = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
+
+  if (isAuthenticated && user?.role === "ADMIN") {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return children;
+};
 
 function App() {
   return (
     <Router>
-      <Suspense fallback={<p className="text-sm text-slate-500">Loading page...</p>}>
+      <Suspense fallback={<p className="p-6 text-sm text-slate-500">Loading page...</p>}>
         <Routes>
-          <Route element={<AppLayout />}>
+          <Route
+            element={
+              <StorefrontGuard>
+                <AppLayout />
+              </StorefrontGuard>
+            }
+          >
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/shop/:id" element={<ProductDetail />} />
@@ -54,21 +76,28 @@ function App() {
             <Route
               path="/profile"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute role="USER">
                   <Profile />
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute role="ADMIN">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute role="ADMIN">
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="orders" element={<AdminOrders />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </Router>
