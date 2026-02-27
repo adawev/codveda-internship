@@ -94,6 +94,10 @@ public class OrderService {
                 "/topic/orders/" + saved.getUser().getId(),
                 new OrderStatusEvent(saved.getId(), saved.getStatus())
         );
+        messagingTemplate.convertAndSend(
+                "/topic/orders",
+                new OrderStatusEvent(saved.getId(), saved.getStatus())
+        );
         cartService.clearCart(cart);
         return saved;
     }
@@ -118,6 +122,10 @@ public class OrderService {
         Order saved = orderRepository.save(order);
         messagingTemplate.convertAndSend(
                 "/topic/orders/" + saved.getUser().getId(),
+                new OrderStatusEvent(saved.getId(), saved.getStatus())
+        );
+        messagingTemplate.convertAndSend(
+                "/topic/orders",
                 new OrderStatusEvent(saved.getId(), saved.getStatus())
         );
         return saved;

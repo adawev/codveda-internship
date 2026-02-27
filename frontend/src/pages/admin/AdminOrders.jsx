@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { useToast } from "../../components/ui/use-toast";
+import { useAuth } from "../../AuthContext";
+import { connectStomp, subscribeStomp } from "../../lib/stomp";
 import { getOrders, removeOrder, updateOrderStatus } from "../../services/admin";
 import Modal from "../../components/admin/Modal";
 import ConfirmDialog from "../../components/admin/ConfirmDialog";
@@ -16,11 +18,13 @@ const statuses = ["PENDING", "PAID", "SHIPPED"];
 
 const AdminOrders = () => {
   const { toast } = useToast();
+  const { accessToken } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [pendingDeleteOrder, setPendingDeleteOrder] = useState(null);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -37,6 +41,40 @@ const AdminOrders = () => {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  useEffect(() => {
+    if (!accessToken) {
+      setSocketConnected(false);
+      return;
+    }
+
+    connectStomp(accessToken, {
+      onConnect: () => setSocketConnected(true),
+      onDisconnect: () => setSocketConnected(false),
+    });
+
+    const handleEvent = (payload) => {
+      if (!payload?.orderId) {
+        return;
+      }
+
+      setOrders((prev) =>
+        prev.map((order) => (order.id === payload.orderId ? { ...order, status: payload.status } : order))
+      );
+
+      toast({
+        title: `Order #${payload.orderId}`,
+        description: `Status updated to ${payload.status}`,
+        variant: "secondary",
+      });
+    };
+
+    const subscription = subscribeStomp("/topic/orders", handleEvent);
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [accessToken, toast]);
 
   const onChangeStatus = async (order, status) => {
     setActionId(order.id);
@@ -80,6 +118,11 @@ const AdminOrders = () => {
     <section className="space-y-4">
       <header>
         <h2 className="text-xl font-semibold text-slate-900">Orders</h2>
+        {socketConnected ? (
+          <p className="text-xs font-semibold text-emerald-600">Live admin updates active</p>
+        ) : (
+          <p className="text-xs text-slate-500">Waiting for WebSocket</p>
+        )}
       </header>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">

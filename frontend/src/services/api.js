@@ -10,6 +10,8 @@ const api = axios.create({
   withCredentials: true,
 });
 
+export const API_BASE_URL = baseURL;
+
 export const setAccessToken = (token) => {
   accessToken = token || null;
 };

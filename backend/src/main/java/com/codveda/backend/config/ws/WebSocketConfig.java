@@ -65,6 +65,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOrigins(normalizeAllowedOrigins())
                 .withSockJS();
+
+        registry.addEndpoint("/ws-simple")
+                .setAllowedOrigins(normalizeAllowedOrigins());
     }
 
     @Override
