@@ -66,6 +66,6 @@ public class UserService {
     }
 
     private boolean isEncoded(String value) {
-        return value.startsWith(\"$2a$\") || value.startsWith(\"$2b$\") || value.startsWith(\"$2y$\");
+        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 }

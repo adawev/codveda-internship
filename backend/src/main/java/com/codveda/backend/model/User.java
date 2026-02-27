@@ -6,6 +6,8 @@ import com.codveda.backend.model.cart.Cart;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,14 +34,18 @@ public class User implements UserDetails {
     private Long id;
 
     @Column(nullable = false)
+    @NotBlank
+    @Size(max = 120)
     private String name;
 
     @Email
+    @Size(max = 200)
     @Column(nullable = false, unique = true)
     private String email;
 
     @JsonIgnore
     @Column(nullable = false)
+    @Size(min = 8, max = 200)
     private String password;
 
     @Enumerated(EnumType.STRING)

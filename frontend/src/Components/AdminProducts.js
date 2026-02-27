@@ -21,7 +21,7 @@ const AdminProducts = () => {
     setError(null);
     try {
       const response = await api.get("/api/products");
-      setProducts(response.data);
+      setProducts(response.data.content ?? []);
     } catch (err) {
       setError("Unable to load products.");
     } finally {

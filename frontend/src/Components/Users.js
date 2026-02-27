@@ -17,7 +17,7 @@ const Users = () => {
     setError(null);
     try {
       const res = await getUsers();
-      setUsers(res.data);
+      setUsers(res.data.content ?? []);
     } catch (err) {
       setError("Unable to load users.");
     } finally {
@@ -29,7 +29,7 @@ const Users = () => {
     event.preventDefault();
     setError(null);
     try {
-      await createUser({ name, email, password: "1234" });
+      await createUser({ name, email, password: "ChangeMe123!" });
       setName("");
       setEmail("");
       fetchUsers();
@@ -51,7 +51,7 @@ const Users = () => {
   return (
     <div>
       <h3>Users</h3>
-      <p className="note">Create users quickly for testing. Default password is set internally.</p>
+      <p className="note">Create users for administrative management with a temporary strong password.</p>
       <form onSubmit={handleAdd} className="form">
         <label className="field">
           <span>Name</span>

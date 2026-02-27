@@ -31,9 +31,9 @@ public class CartService {
     public Cart getOrCreateCart(User user) {
         Cart cart = cartRepository.findByUser(user)
                 .orElseGet(() -> {
-                    Cart cart = new Cart();
-                    cart.setUser(user);
-                    return cartRepository.save(cart);
+                    Cart newCart = new Cart();
+                    newCart.setUser(user);
+                    return cartRepository.save(newCart);
                 });
         cart.getCartItems().size();
         return cart;

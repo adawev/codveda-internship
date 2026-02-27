@@ -1,7 +1,10 @@
 package com.codveda.backend.model.product;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,9 +28,12 @@ public class Product {
     private Long id;
 
     @Column(nullable = false)
+    @NotBlank
+    @Size(max = 180)
     private String name;
 
     @Column(columnDefinition = "TEXT")
+    @Size(max = 2000)
     private String description;
 
     @Positive
@@ -35,6 +41,7 @@ public class Product {
     private BigDecimal price;
 
     @Column(nullable = false)
+    @PositiveOrZero
     private Integer stock;
 
     private String imageUrl;
