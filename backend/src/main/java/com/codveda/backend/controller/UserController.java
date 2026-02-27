@@ -3,6 +3,7 @@ package com.codveda.backend.controller;
 import com.codveda.backend.controller.dto.user.UserCreateRequest;
 import com.codveda.backend.controller.dto.user.UserResponse;
 import com.codveda.backend.controller.dto.user.UserUpdateRequest;
+import com.codveda.backend.exception.UnauthorizedException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.service.UserService;
 import jakarta.validation.Valid;
@@ -10,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -37,28 +40,27 @@ public class UserController {
         return userService.findAll(pageable).map(this::toResponse);
     }
 
+    @GetMapping("/me")
+    public UserResponse getCurrentUser() {
+        return toResponse(resolveCurrentUser());
+    }
+
     @GetMapping("/{id}")
     public UserResponse getUserById(@PathVariable Long id) {
         return toResponse(userService.findByIdOrThrow(id));
     }
 
+    @PutMapping("/me")
+    public UserResponse updateCurrentUser(@Valid @RequestBody UserUpdateRequest request) {
+        User current = resolveCurrentUser();
+        applyUpdates(current, request);
+        return toResponse(userService.save(current));
+    }
+
     @PutMapping("/{id}")
     public UserResponse updateUser(@PathVariable Long id, @Valid @RequestBody UserUpdateRequest request) {
         User existing = userService.findByIdOrThrow(id);
-
-        if (request.getName() != null) {
-            existing.setName(request.getName());
-        }
-        if (request.getEmail() != null) {
-            existing.setEmail(request.getEmail());
-        }
-        if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            existing.setPassword(request.getPassword());
-        }
-        if (request.getRole() != null) {
-            existing.setRole(request.getRole());
-        }
-
+        applyUpdates(existing, request);
         return toResponse(userService.save(existing));
     }
 
@@ -76,5 +78,28 @@ public class UserController {
                 user.getRole(),
                 user.getCreatedAt()
         );
+    }
+
+    private User resolveCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            throw new UnauthorizedException("Authentication required");
+        }
+        return userService.findByEmailOrThrow(authentication.getName());
+    }
+
+    private void applyUpdates(User target, UserUpdateRequest request) {
+        if (request.getName() != null) {
+            target.setName(request.getName());
+        }
+        if (request.getEmail() != null) {
+            target.setEmail(request.getEmail());
+        }
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            target.setPassword(request.getPassword());
+        }
+        if (request.getRole() != null) {
+            target.setRole(request.getRole());
+        }
     }
 }

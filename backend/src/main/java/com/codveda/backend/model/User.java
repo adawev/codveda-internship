@@ -49,10 +49,10 @@ public class User implements UserDetails {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(255) default 'USER'")
     private Role role;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "timestamp(6) default CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
     @JsonIgnore

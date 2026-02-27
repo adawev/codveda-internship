@@ -1,58 +1,44 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
+import InputField from "../components/form/InputField";
+import PasswordField from "../components/form/PasswordField";
+import SubmitButton from "../components/form/SubmitButton";
+import { useToast } from "../components/ui/use-toast";
 
 const Login = () => {
   const { login } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError(null);
+    setIsLoading(true);
     try {
       await login(email, password);
+      toast({ title: "Logged in", description: "Welcome back.", variant: "success" });
       navigate("/");
-    } catch (err) {
-      setError("Invalid credentials");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <p className="eyebrow">Welcome back</p>
-          <h2>Login</h2>
-          <p className="note">Sign in to manage your cart and orders.</p>
-        </div>
-      </div>
-      <form onSubmit={handleSubmit} className="form">
-        <label className="field">
-          <span>Email</span>
-          <input
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </label>
-        <label className="field">
-          <span>Password</span>
-          <input
-            type="password"
-            placeholder="Your password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </label>
-        <button type="submit">Sign in</button>
-        {error && <p className="error">{error}</p>}
+    <div className="mx-auto w-full max-w-md rounded-xl border border-slate-200 bg-white p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-cyan-700">Welcome back</p>
+      <h1 className="mt-2 text-2xl font-black">Login</h1>
+      <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
+        <InputField id="login-email" type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+        <PasswordField id="login-password" label="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <SubmitButton isLoading={isLoading} loadingLabel="Signing in...">Sign in</SubmitButton>
       </form>
+      <p className="mt-4 text-sm text-slate-600">
+        Don&apos;t have an account? <Link to="/register" className="font-semibold text-cyan-700">Register</Link>
+      </p>
     </div>
   );
 };
