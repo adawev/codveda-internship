@@ -43,6 +43,11 @@ public class ProductService {
                 .orElseThrow(() -> new NotFoundException("Product not found: " + id));
     }
 
+    public Product findActiveByIdOrThrow(Long id) {
+        return productRepository.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new NotFoundException("Product not found: " + id));
+    }
+
     @CacheEvict(value = "products", allEntries = true)
     public void deleteById(Long id) {
         if (!productRepository.existsById(id)) {

@@ -3,9 +3,9 @@ services:
     image: postgres:16
     container_name: codveda-postgres
     environment:
-      POSTGRES_DB: codveda_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME:?set DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME:?set DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -20,12 +20,13 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8080
-      DB_URL: jdbc:postgresql://db:5432/codveda_db
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
-      APP_JWT_SECRET: replace-with-strong-secret-key-at-least-32-bytes
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:?set DB_NAME}
+      DB_USERNAME: ${DB_USERNAME:?set DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?set APP_JWT_SECRET}
       APP_JWT_ACCESS_EXPIRATION_MS: 900000
       APP_JWT_REFRESH_EXPIRATION_MS: 604800000
+      APP_AUTH_REFRESH_COOKIE_SECURE: "true"
     ports:
       - "8080:8080"
 

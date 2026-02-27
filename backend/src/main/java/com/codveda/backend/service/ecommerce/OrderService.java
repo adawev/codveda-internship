@@ -14,6 +14,7 @@ import com.codveda.backend.model.product.Product;
 import com.codveda.backend.repository.OrderRepository;
 import com.codveda.backend.repository.ProductRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -94,16 +100,14 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Page<Order> findOrders(User user, Pageable pageable) {
-        Page<Order> orders = orderRepository.findAllByUser(user, pageable);
-        orders.forEach(order -> order.getOrderItems().size());
-        return orders;
+        Page<Long> idPage = orderRepository.findOrderIdsByUser(user, pageable);
+        return fetchPagedOrders(idPage, pageable);
     }
 
     @Transactional(readOnly = true)
     public Page<Order> findAllOrders(Pageable pageable) {
-        Page<Order> orders = orderRepository.findAll(pageable);
-        orders.forEach(order -> order.getOrderItems().size());
-        return orders;
+        Page<Long> idPage = orderRepository.findAllOrderIds(pageable);
+        return fetchPagedOrders(idPage, pageable);
     }
 
     @Transactional
@@ -125,5 +129,28 @@ public class OrderService {
             throw new NotFoundException("Order not found: " + orderId);
         }
         orderRepository.deleteById(orderId);
+    }
+
+    private Page<Order> fetchPagedOrders(Page<Long> idPage, Pageable pageable) {
+        if (idPage.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Order> hydrated = orderRepository.findAllWithItemsByIdIn(idPage.getContent());
+        Map<Long, Order> byId = hydrated.stream()
+                .collect(Collectors.toMap(Order::getId, Function.identity()));
+
+        List<Order> ordered = idPage.getContent().stream()
+                .map(byId::get)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (ordered.size() != idPage.getContent().size()) {
+            ordered = hydrated.stream()
+                    .sorted(Comparator.comparing(Order::getCreatedAt).reversed())
+                    .toList();
+        }
+
+        return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
     }
 }

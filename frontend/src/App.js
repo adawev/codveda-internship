@@ -22,7 +22,11 @@ const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
 
 const StorefrontGuard = ({ children }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return <p className="p-6 text-sm text-slate-500">Checking session...</p>;
+  }
 
   if (isAuthenticated && user?.role === "ADMIN") {
     return <Navigate to="/admin" replace />;

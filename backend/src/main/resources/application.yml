@@ -11,6 +11,18 @@ app:
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
   jwt:
-    secret: ${APP_JWT_SECRET:${random.uuid}${random.uuid}}
+    secret: ${APP_JWT_SECRET}
     access-expiration-ms: ${APP_JWT_ACCESS_EXPIRATION_MS:900000}
     refresh-expiration-ms: ${APP_JWT_REFRESH_EXPIRATION_MS:604800000}
+  auth:
+    refresh-cookie-name: ${APP_AUTH_REFRESH_COOKIE_NAME:refresh_token}
+    refresh-cookie-secure: ${APP_AUTH_REFRESH_COOKIE_SECURE:false}
+  websocket:
+    broker:
+      relay-enabled: ${APP_WS_RELAY_ENABLED:false}
+      relay-host: ${APP_WS_RELAY_HOST:localhost}
+      relay-port: ${APP_WS_RELAY_PORT:61613}
+      client-login: ${APP_WS_RELAY_CLIENT_LOGIN:guest}
+      client-passcode: ${APP_WS_RELAY_CLIENT_PASSCODE:guest}
+      system-login: ${APP_WS_RELAY_SYSTEM_LOGIN:guest}
+      system-passcode: ${APP_WS_RELAY_SYSTEM_PASSCODE:guest}

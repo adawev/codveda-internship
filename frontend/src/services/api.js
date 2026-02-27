@@ -3,17 +3,19 @@ import { emitToast } from "../components/toast/toastBus";
 import { getErrorMessage } from "./errorMapper";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8080";
+let accessToken = null;
 
 const api = axios.create({
   baseURL,
+  withCredentials: true,
 });
 
+export const setAccessToken = (token) => {
+  accessToken = token || null;
+};
+
 const clearSessionAndLogout = () => {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("userRole");
-  localStorage.removeItem("userId");
+  accessToken = null;
 
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("auth:logout"));
@@ -26,8 +28,7 @@ const shouldForceLogoutOn403 = (error) => {
     return false;
   }
 
-  const hasToken = !!localStorage.getItem("accessToken");
-  if (!hasToken) {
+  if (!accessToken) {
     return false;
   }
 
@@ -41,9 +42,8 @@ const shouldForceLogoutOn403 = (error) => {
 };
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
 });
@@ -52,20 +52,20 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config || {};
+    const status = error.response?.status;
+    const path = original.url || "";
 
-    if (error.response?.status === 401 && !original._retry) {
+    if (status === 401 && !original._retry && !path.includes("/api/auth/refresh")) {
       original._retry = true;
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) {
-        return Promise.reject(error);
-      }
 
       try {
-        const refreshResponse = await axios.post(`${baseURL}/api/auth/refresh`, {
-          refreshToken,
-        });
+        const refreshResponse = await axios.post(
+          `${baseURL}/api/auth/refresh`,
+          {},
+          { withCredentials: true, suppressErrorToast: true }
+        );
         const newAccessToken = refreshResponse.data.accessToken;
-        localStorage.setItem("accessToken", newAccessToken);
+        setAccessToken(newAccessToken);
         original.headers = original.headers || {};
         original.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(original);
@@ -92,7 +92,6 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const status = error.response?.status;
     if (!original.suppressErrorToast && status >= 400) {
       emitToast({
         title: status >= 500 ? "Server error" : "Error",

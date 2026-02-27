@@ -29,14 +29,13 @@ public class CartService {
 
     @Transactional
     public Cart getOrCreateCart(User user) {
-        Cart cart = cartRepository.findByUser(user)
+        Cart cart = cartRepository.findByUserWithItemsAndProducts(user)
                 .orElseGet(() -> {
                     Cart newCart = new Cart();
                     newCart.setUser(user);
                     return cartRepository.save(newCart);
                 });
-        cart.getCartItems().size();
-        return cart;
+        return cartRepository.findByUserWithItemsAndProducts(user).orElse(cart);
     }
 
     @Transactional
@@ -62,8 +61,7 @@ public class CartService {
             cartItemRepository.save(item);
         }
 
-        cart.getCartItems().size();
-        return cart;
+        return cartRepository.findByUserWithItemsAndProducts(user).orElse(cart);
     }
 
     @Transactional

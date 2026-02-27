@@ -1,3 +1,5 @@
+scalar BigDecimal
+
 type Query {
   getProducts(page: Int!, size: Int!): ProductPage!
   getUserOrders: [Order!]!
@@ -20,17 +22,17 @@ type Product {
   id: ID!
   name: String!
   description: String
-  price: Float!
+  price: BigDecimal!
   stock: Int!
   imageUrl: String
 }
 
 type Order {
   id: ID!
-  totalPrice: Float!
+  totalPrice: BigDecimal!
   shippingAddress: String!
   paymentMethod: String!
-  totalAmount: Float!
+  totalAmount: BigDecimal!
   status: String!
   createdAt: String!
   items: [OrderItem!]!
@@ -41,13 +43,13 @@ type OrderItem {
   productId: ID!
   productName: String!
   quantity: Int!
-  price: Float!
+  price: BigDecimal!
 }
 
 input UpdateProductInput {
   name: String
   description: String
-  price: Float
+  price: BigDecimal
   stock: Int
   imageUrl: String
 }
@@ -55,5 +57,5 @@ input UpdateProductInput {
 input CreateOrderInput {
   shippingAddress: String!
   paymentMethod: String!
-  totalAmount: Float!
+  totalAmount: BigDecimal!
 }

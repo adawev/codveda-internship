@@ -33,8 +33,11 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ProductResponse getProduct(@PathVariable Long id) {
-        return toResponse(productService.findByIdOrThrow(id));
+    public ProductResponse getProduct(@PathVariable Long id, Authentication authentication) {
+        Product product = isAdmin(authentication)
+                ? productService.findByIdOrThrow(id)
+                : productService.findActiveByIdOrThrow(id);
+        return toResponse(product);
     }
 
     @PostMapping

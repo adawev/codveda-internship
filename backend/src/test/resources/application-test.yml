@@ -8,6 +8,8 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
+  flyway:
+    enabled: false
 app:
   jwt:
     secret: test-secret-key-for-jwt-signing-1234567890

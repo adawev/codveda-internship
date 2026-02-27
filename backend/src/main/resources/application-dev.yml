@@ -1,15 +1,19 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/codveda_db}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:roots}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
 
 app:
   admin:
