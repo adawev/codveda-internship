@@ -1,13 +1,14 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Cart from "./pages/Cart";
-import Orders from "./pages/Orders";
-import AdminDashboard from "./pages/AdminDashboard";
-import Products from "./pages/Products";
 import ProtectedRoute from "./ProtectedRoute";
 import { useAuth } from "./AuthContext";
+
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Orders = lazy(() => import("./pages/Orders"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const Products = lazy(() => import("./pages/Products"));
 
 function App() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -33,36 +34,38 @@ function App() {
         </header>
 
         <main>
-          <Routes>
-            <Route path="/" element={<Products />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/cart"
-              element={
-                <ProtectedRoute role="USER">
-                  <Cart />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/orders"
-              element={
-                <ProtectedRoute role="USER">
-                  <Orders />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute role="ADMIN">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Products />} />
-          </Routes>
+          <Suspense fallback={<p className="note">Loading page...</p>}>
+            <Routes>
+              <Route path="/" element={<Products />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/cart"
+                element={
+                  <ProtectedRoute role="USER">
+                    <Cart />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/orders"
+                element={
+                  <ProtectedRoute role="USER">
+                    <Orders />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute role="ADMIN">
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Products />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </Router>

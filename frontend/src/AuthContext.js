@@ -11,9 +11,10 @@ export const AuthProvider = ({ children }) => {
     const storedAccessToken = localStorage.getItem("accessToken");
     const storedEmail = localStorage.getItem("userEmail");
     const storedRole = localStorage.getItem("userRole");
+    const storedUserId = localStorage.getItem("userId");
     if (storedAccessToken && storedEmail && storedRole) {
       setAccessToken(storedAccessToken);
-      setUser({ email: storedEmail, role: storedRole });
+      setUser({ email: storedEmail, role: storedRole, id: storedUserId ? Number(storedUserId) : null });
     }
   }, []);
 
@@ -29,15 +30,16 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await api.post("/api/auth/login", { email, password });
-    const { accessToken: newAccessToken, refreshToken, role } = response.data;
+    const { accessToken: newAccessToken, refreshToken, role, userId } = response.data;
 
     localStorage.setItem("accessToken", newAccessToken);
     localStorage.setItem("refreshToken", refreshToken);
     localStorage.setItem("userEmail", email);
     localStorage.setItem("userRole", role);
+    localStorage.setItem("userId", String(userId));
 
     setAccessToken(newAccessToken);
-    setUser({ email, role });
+    setUser({ email, role, id: userId });
   };
 
   const register = async (name, email, password) => {
@@ -49,6 +51,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("userId");
     setAccessToken(null);
     setUser(null);
   };

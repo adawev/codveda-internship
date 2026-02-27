@@ -37,6 +37,7 @@ api.interceptors.response.use(
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("userEmail");
         localStorage.removeItem("userRole");
+        localStorage.removeItem("userId");
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("auth:logout"));
         }

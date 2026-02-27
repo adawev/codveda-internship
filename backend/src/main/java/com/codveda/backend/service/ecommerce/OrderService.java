@@ -2,6 +2,7 @@ package com.codveda.backend.service.ecommerce;
 
 import com.codveda.backend.exception.BadRequestException;
 import com.codveda.backend.exception.NotFoundException;
+import com.codveda.backend.controller.ecommerce.dto.OrderStatusEvent;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
 import com.codveda.backend.model.cart.CartItem;
@@ -90,7 +91,7 @@ public class OrderService {
         Order saved = orderRepository.save(order);
         messagingTemplate.convertAndSend(
                 "/topic/orders/" + saved.getUser().getId(),
-                saved.getStatus().name()
+                new OrderStatusEvent(saved.getId(), saved.getStatus())
         );
         return saved;
     }
