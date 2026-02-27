@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from "react";
-import SockJS from "sockjs-client";
-import { Client } from "@stomp/stompjs";
 import api from "../api";
-import { useAuth } from "../AuthContext";
 
 const Orders = () => {
-  const { isAuthenticated, user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,40 +22,6 @@ const Orders = () => {
   useEffect(() => {
     fetchOrders();
   }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated || !user?.id) {
-      return;
-    }
-
-    const baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8080";
-    const accessToken = localStorage.getItem("accessToken") || "";
-
-    const client = new Client({
-      webSocketFactory: () => new SockJS(`${baseURL}/ws`),
-      connectHeaders: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      reconnectDelay: 5000,
-      onConnect: () => {
-        client.subscribe(`/topic/orders/${user.id}`, (message) => {
-          const payload = JSON.parse(message.body);
-          setOrders((prev) =>
-            prev.map((order) =>
-              Number(order.id) === Number(payload.orderId)
-                ? { ...order, status: payload.status }
-                : order
-            )
-          );
-        });
-      },
-    });
-
-    client.activate();
-    return () => {
-      client.deactivate();
-    };
-  }, [isAuthenticated, user?.id]);
 
   const handleCreateOrder = async () => {
     setError(null);
