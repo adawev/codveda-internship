@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16
+    container_name: codveda-postgres
+    environment:
+      POSTGRES_DB: codveda_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: codveda-backend
+    depends_on:
+      - db
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      DB_URL: jdbc:postgresql://db:5432/codveda_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      APP_JWT_SECRET: replace-with-strong-secret-key-at-least-32-bytes
+      APP_JWT_ACCESS_EXPIRATION_MS: 900000
+      APP_JWT_REFRESH_EXPIRATION_MS: 604800000
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
