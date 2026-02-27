@@ -9,6 +9,6 @@ server:
 
 app:
   jwt:
-    secret: ${APP_JWT_SECRET}
+    secret: ${APP_JWT_SECRET:${random.uuid}${random.uuid}}
     access-expiration-ms: ${APP_JWT_ACCESS_EXPIRATION_MS:900000}
     refresh-expiration-ms: ${APP_JWT_REFRESH_EXPIRATION_MS:604800000}
