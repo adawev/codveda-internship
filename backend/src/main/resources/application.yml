@@ -1,21 +1,14 @@
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/codveda_db
-    username: postgres
-    password: roots
+  application:
+    name: codveda-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 app:
   jwt:
-    secret: codveda-jwt-secret-key-please-change-123456
-    access-expiration-ms: 900000
-    refresh-expiration-ms: 604800000
+    secret: ${APP_JWT_SECRET}
+    access-expiration-ms: ${APP_JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-expiration-ms: ${APP_JWT_REFRESH_EXPIRATION_MS:604800000}

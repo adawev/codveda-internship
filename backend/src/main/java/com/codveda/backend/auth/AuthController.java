@@ -6,6 +6,8 @@ import com.codveda.backend.auth.dto.LoginRequest;
 import com.codveda.backend.auth.dto.MessageResponse;
 import com.codveda.backend.auth.dto.RefreshRequest;
 import com.codveda.backend.auth.dto.RegisterRequest;
+import com.codveda.backend.exception.ConflictException;
+import com.codveda.backend.exception.UnauthorizedException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
 import com.codveda.backend.model.enums.Role;
@@ -42,8 +44,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest request) {
         if (userService.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new MessageResponse("Email already registered"));
+            throw new ConflictException("Email already registered");
         }
 
         User user = new User();
@@ -74,7 +75,7 @@ public class AuthController {
         String refreshToken = jwtService.generateRefreshToken(user);
 
         return ResponseEntity.ok(
-                new AuthResponse(accessToken, refreshToken, user.getRole().name(), user.getEmail())
+                new AuthResponse(accessToken, refreshToken, user.getRole().name(), user.getEmail(), user.getId())
         );
     }
 
@@ -85,23 +86,23 @@ public class AuthController {
         try {
             email = jwtService.extractUsername(refreshToken);
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw new UnauthorizedException("Invalid refresh token");
         }
 
         String tokenType;
         try {
             tokenType = jwtService.extractTokenType(refreshToken);
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw new UnauthorizedException("Invalid refresh token");
         }
 
         if (!"refresh".equals(tokenType)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw new UnauthorizedException("Invalid token type");
         }
 
-        User user = userService.findByEmail(email).orElseThrow();
+        User user = userService.findByEmailOrThrow(email);
         if (!jwtService.isTokenValid(refreshToken, user)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw new UnauthorizedException("Expired or invalid refresh token");
         }
 
         String accessToken = jwtService.generateAccessToken(user);
