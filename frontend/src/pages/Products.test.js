@@ -1,5 +1,4 @@
 import React from "react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import Products from "./Products";
 import api from "../services/api";
@@ -30,6 +29,11 @@ jest.mock("../components/ui/use-toast", () => ({
   }),
 }));
 
+jest.mock("react-router-dom", () => ({
+  useSearchParams: () => [new URLSearchParams()],
+  Link: ({ children }) => <span>{children}</span>,
+}), { virtual: true });
+
 describe("Products page integration", () => {
   test("loads products from backend and applies server-side filters", async () => {
     api.get
@@ -48,13 +52,7 @@ describe("Products page integration", () => {
         },
       });
 
-    render(
-      <MemoryRouter initialEntries={["/shop"]}>
-        <Routes>
-          <Route path="/shop" element={<Products />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    render(<Products />);
 
     expect(screen.getByText(/loading products/i)).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText(/gaming mouse/i)).toBeInTheDocument());

@@ -1,5 +1,4 @@
 import React from "react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -9,24 +8,15 @@ jest.mock("./AuthContext", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+jest.mock("react-router-dom", () => ({
+  Navigate: ({ to }) => <div>redirect:{to}</div>,
+}), { virtual: true });
+
 describe("ProtectedRoute", () => {
   test("shows loading state while auth is hydrating", () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false, isLoading: true, user: null });
 
-    render(
-      <MemoryRouter initialEntries={["/private"]}>
-        <Routes>
-          <Route
-            path="/private"
-            element={(
-              <ProtectedRoute role="USER">
-                <div>Private page</div>
-              </ProtectedRoute>
-            )}
-          />
-        </Routes>
-      </MemoryRouter>
-    );
+    render(<ProtectedRoute role="USER"><div>Private page</div></ProtectedRoute>);
 
     expect(screen.getByText(/checking session/i)).toBeInTheDocument();
   });
@@ -34,22 +24,8 @@ describe("ProtectedRoute", () => {
   test("redirects unauthenticated users to login", () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false, isLoading: false, user: null });
 
-    render(
-      <MemoryRouter initialEntries={["/private"]}>
-        <Routes>
-          <Route path="/login" element={<div>Login page</div>} />
-          <Route
-            path="/private"
-            element={(
-              <ProtectedRoute role="USER">
-                <div>Private page</div>
-              </ProtectedRoute>
-            )}
-          />
-        </Routes>
-      </MemoryRouter>
-    );
+    render(<ProtectedRoute role="USER"><div>Private page</div></ProtectedRoute>);
 
-    expect(screen.getByText(/login page/i)).toBeInTheDocument();
+    expect(screen.getByText("redirect:/login")).toBeInTheDocument();
   });
 });

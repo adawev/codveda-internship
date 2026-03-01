@@ -32,8 +32,14 @@ import java.util.List;
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+    private final ObjectMapper objectMapper;
+
     @Value("${app.cors.allowed-origins:http://localhost:3000}")
     private String allowedOrigins;
+
+    public SecurityConfig(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -119,6 +125,6 @@ public class SecurityConfig {
                 message,
                 path
         );
-        response.getWriter().write(new ObjectMapper().writeValueAsString(payload));
+        response.getWriter().write(objectMapper.writeValueAsString(payload));
     }
 }

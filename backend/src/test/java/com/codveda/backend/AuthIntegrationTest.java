@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import jakarta.servlet.http.Cookie;
 
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -71,11 +72,10 @@ class AuthIntegrationTest {
                 .andExpect(cookie().exists("refresh_token"))
                 .andReturn();
 
-        String setCookie = loginResult.getResponse().getHeader("Set-Cookie");
-        String cookieHeader = setCookie == null ? "" : setCookie.split(";", 2)[0];
+        Cookie refreshCookie = loginResult.getResponse().getCookie("refresh_token");
 
         mockMvc.perform(post("/api/auth/refresh")
-                        .header("Cookie", cookieHeader))
+                        .cookie(refreshCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken", not(emptyOrNullString())))
                 .andExpect(cookie().exists("refresh_token"));
@@ -87,7 +87,7 @@ class AuthIntegrationTest {
         String accessToken = jwtService.generateAccessToken(user);
 
         mockMvc.perform(post("/api/auth/refresh")
-                        .header("Cookie", "refresh_token=" + accessToken))
+                        .cookie(new Cookie("refresh_token", accessToken)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Invalid token type"));
     }
