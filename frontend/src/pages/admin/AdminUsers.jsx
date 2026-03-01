@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { useToast } from "../../components/ui/use-toast";
@@ -23,7 +23,7 @@ const AdminUsers = () => {
   const [actionId, setActionId] = useState(null);
   const [pendingDeleteUser, setPendingDeleteUser] = useState(null);
 
-  const fetchUsers = async (nextPage = page) => {
+  const fetchUsers = useCallback(async (nextPage = page) => {
     setLoading(true);
     try {
       const response = await getUsers(Math.max(0, nextPage - 1), size);
@@ -38,11 +38,11 @@ const AdminUsers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, size]);
 
   useEffect(() => {
     fetchUsers(page);
-  }, [page]);
+  }, [fetchUsers, page]);
 
   const onDelete = async (user) => {
     if (user.role === "ADMIN") {

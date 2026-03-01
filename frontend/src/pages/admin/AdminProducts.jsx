@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { useToast } from "../../components/ui/use-toast";
@@ -30,7 +30,7 @@ const AdminProducts = () => {
   const [saving, setSaving] = useState(false);
   const [pendingDeleteProduct, setPendingDeleteProduct] = useState(null);
 
-  const fetchProducts = async (nextPage = page) => {
+  const fetchProducts = useCallback(async (nextPage = page) => {
     setLoading(true);
     try {
       const response = await getProducts(Math.max(0, nextPage - 1), size);
@@ -45,11 +45,11 @@ const AdminProducts = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, size]);
 
   useEffect(() => {
     fetchProducts(page);
-  }, [page]);
+  }, [fetchProducts, page]);
 
   const openEdit = (product) => {
     setEditing(product);

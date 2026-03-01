@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { useToast } from "../../components/ui/use-toast";
 import { useAuth } from "../../AuthContext";
@@ -30,7 +30,7 @@ const AdminOrders = () => {
   const [pendingDeleteOrder, setPendingDeleteOrder] = useState(null);
   const [socketConnected, setSocketConnected] = useState(false);
 
-  const fetchOrders = async (nextPage = page) => {
+  const fetchOrders = useCallback(async (nextPage = page) => {
     setLoading(true);
     try {
       const response = await getOrders(Math.max(0, nextPage - 1), size);
@@ -45,11 +45,11 @@ const AdminOrders = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, size]);
 
   useEffect(() => {
     fetchOrders(page);
-  }, [page]);
+  }, [fetchOrders, page]);
 
   useEffect(() => {
     if (!accessToken) {
