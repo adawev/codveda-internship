@@ -2,6 +2,7 @@ package com.codveda.backend;
 
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.enums.Role;
+import com.codveda.backend.repository.RefreshTokenRepository;
 import com.codveda.backend.repository.UserRepository;
 import com.codveda.backend.security.JwtService;
 import com.codveda.backend.service.UserService;
@@ -34,9 +35,12 @@ class AuthIntegrationTest {
     private UserService userService;
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     @BeforeEach
     void clean() {
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -68,9 +72,10 @@ class AuthIntegrationTest {
                 .andReturn();
 
         String setCookie = loginResult.getResponse().getHeader("Set-Cookie");
+        String cookieHeader = setCookie == null ? "" : setCookie.split(";", 2)[0];
 
         mockMvc.perform(post("/api/auth/refresh")
-                        .header("Cookie", setCookie))
+                        .header("Cookie", cookieHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken", not(emptyOrNullString())))
                 .andExpect(cookie().exists("refresh_token"));

@@ -11,10 +11,13 @@ import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
 import com.codveda.backend.model.enums.Role;
 import com.codveda.backend.repository.CartRepository;
+import com.codveda.backend.response.ApiResponse;
 import com.codveda.backend.security.JwtService;
 import com.codveda.backend.service.auth.RefreshTokenService;
 import com.codveda.backend.service.UserService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -32,6 +35,7 @@ import java.time.Duration;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
     private final UserService userService;
     private final CartRepository cartRepository;
     private final AuthenticationManager authenticationManager;
@@ -63,7 +67,7 @@ public class AuthController {
 
     @PostMapping("/register")
     @Transactional
-    public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<MessageResponse>> register(@Valid @RequestBody RegisterRequest request) {
         if (userService.findByEmail(request.getEmail()).isPresent()) {
             throw new ConflictException("Email already registered");
         }
@@ -81,12 +85,13 @@ public class AuthController {
         savedUser.setCart(cart);
         cartRepository.save(cart);
 
+        log.info("New account registered for {}", savedUser.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new MessageResponse("User registered successfully"));
+                .body(ApiResponse.success("User registered", new MessageResponse("User registered successfully")));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -95,13 +100,14 @@ public class AuthController {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = refreshTokenService.issueToken(user, user);
 
+        log.info("User logged in: {}", user.getEmail());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(refreshToken).toString())
-                .body(new AuthResponse(accessToken, user.getRole().name(), user.getEmail(), user.getId()));
+                .body(ApiResponse.success(new AuthResponse(accessToken, user.getRole().name(), user.getEmail(), user.getId())));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AccessTokenResponse> refresh(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<AccessTokenResponse>> refresh(HttpServletRequest request) {
         String refreshToken = extractRefreshTokenFromCookie(request);
         if (refreshToken == null) {
             throw new UnauthorizedException("Missing refresh token");
@@ -132,18 +138,20 @@ public class AuthController {
 
         String rotatedRefreshToken = refreshTokenService.rotateToken(refreshToken, user);
         String accessToken = jwtService.generateAccessToken(user);
+        log.info("Refresh token rotated for {}", user.getEmail());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(rotatedRefreshToken).toString())
-                .body(new AccessTokenResponse(accessToken));
+                .body(ApiResponse.success(new AccessTokenResponse(accessToken)));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<MessageResponse> logout(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<MessageResponse>> logout(HttpServletRequest request) {
         String refreshToken = extractRefreshTokenFromCookie(request);
         refreshTokenService.revokeByRawTokenIfPresent(refreshToken, "LOGOUT");
+        log.info("Session logout requested");
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, clearRefreshCookie().toString())
-                .body(new MessageResponse("Logged out"));
+                .body(ApiResponse.success(new MessageResponse("Logged out")));
     }
 
     private String extractRefreshTokenFromCookie(HttpServletRequest request) {

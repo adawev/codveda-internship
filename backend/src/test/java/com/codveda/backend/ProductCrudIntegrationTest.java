@@ -2,7 +2,11 @@ package com.codveda.backend;
 
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.enums.Role;
+import com.codveda.backend.repository.CartItemRepository;
+import com.codveda.backend.repository.CartRepository;
+import com.codveda.backend.repository.OrderRepository;
 import com.codveda.backend.repository.ProductRepository;
+import com.codveda.backend.repository.RefreshTokenRepository;
 import com.codveda.backend.repository.UserRepository;
 import com.codveda.backend.security.JwtService;
 import com.codveda.backend.service.UserService;
@@ -41,9 +45,21 @@ class ProductCrudIntegrationTest {
     private JwtService jwtService;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private OrderRepository orderRepository;
+    @Autowired
+    private CartItemRepository cartItemRepository;
+    @Autowired
+    private CartRepository cartRepository;
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     @BeforeEach
     void clean() {
+        orderRepository.deleteAll();
+        cartItemRepository.deleteAll();
+        cartRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
         productRepository.deleteAll();
         userRepository.deleteAll();
     }

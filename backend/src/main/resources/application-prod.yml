@@ -21,3 +21,5 @@ logging:
 app:
   jwt:
     secret: ${APP_JWT_SECRET}
+  auth:
+    refresh-cookie-secure: ${APP_AUTH_REFRESH_COOKIE_SECURE:true}

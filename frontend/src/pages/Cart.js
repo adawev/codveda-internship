@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api";
+import api from "../services/api";
 import { useCart } from "../CartContext";
 import { useToast } from "../components/ui/use-toast";
 import { Button } from "../components/ui/button";

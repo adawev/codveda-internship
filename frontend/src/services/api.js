@@ -16,6 +16,13 @@ export const setAccessToken = (token) => {
   accessToken = token || null;
 };
 
+const unwrapApiResponse = (payload) => {
+  if (payload && typeof payload === "object" && Object.prototype.hasOwnProperty.call(payload, "data")) {
+    return payload.data;
+  }
+  return payload;
+};
+
 const clearSessionAndLogout = () => {
   accessToken = null;
 
@@ -51,7 +58,10 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    response.data = unwrapApiResponse(response.data);
+    return response;
+  },
   async (error) => {
     const original = error.config || {};
     const status = error.response?.status;
@@ -66,7 +76,7 @@ api.interceptors.response.use(
           {},
           { withCredentials: true, suppressErrorToast: true }
         );
-        const newAccessToken = refreshResponse.data.accessToken;
+        const newAccessToken = refreshResponse.data?.data?.accessToken ?? refreshResponse.data?.accessToken;
         setAccessToken(newAccessToken);
         original.headers = original.headers || {};
         original.headers.Authorization = `Bearer ${newAccessToken}`;

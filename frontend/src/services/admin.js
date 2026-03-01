@@ -1,4 +1,4 @@
-import api from "../api";
+import api from "./api";
 
 export const getUsers = () => api.get("/api/users?page=0&size=100&sort=createdAt,desc");
 export const removeUser = (id) => api.delete(`/api/users/${id}`);
