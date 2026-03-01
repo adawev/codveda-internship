@@ -37,10 +37,16 @@ class StompSession {
     this.buffer = "";
     this.connected = false;
     this.socket = null;
+    this.manualDisconnect = false;
+    this.reconnectAttempts = 0;
+    this.reconnectTimer = null;
     this.connect();
   }
 
   connect() {
+    if (this.manualDisconnect) {
+      return;
+    }
     this.socket = new WebSocket(buildWsUrl());
     this.socket.onopen = () => this.sendFrame("CONNECT", {
       Authorization: `Bearer ${this.accessToken}`,
@@ -56,6 +62,21 @@ class StompSession {
     this.connected = false;
     this.socket = null;
     this.handlers.onDisconnect?.();
+    if (!this.manualDisconnect) {
+      this.scheduleReconnect();
+    }
+  }
+
+  scheduleReconnect() {
+    if (this.reconnectTimer) {
+      return;
+    }
+    const delay = Math.min(30000, 1000 * 2 ** this.reconnectAttempts);
+    this.reconnectAttempts += 1;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, delay);
   }
 
   handleSocketMessage(payload) {
@@ -75,6 +96,7 @@ class StompSession {
   handleFrame(frame) {
     if (frame.command === "CONNECTED") {
       this.connected = true;
+      this.reconnectAttempts = 0;
       this.handlers.onConnect?.();
       this.flushPendingSubscriptions();
       return;
@@ -149,6 +171,11 @@ class StompSession {
   }
 
   disconnect() {
+    this.manualDisconnect = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.socket) {
       this.sendFrame("DISCONNECT");
       this.socket.close();
@@ -167,6 +194,7 @@ export const connectStomp = (accessToken, handlers = {}) => {
   }
 
   if (stompSession && stompSession.isConnected() && stompSession.accessToken === accessToken) {
+    stompSession.handlers = { ...stompSession.handlers, ...handlers };
     handlers.onConnect?.(stompSession);
     return stompSession;
   }

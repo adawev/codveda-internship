@@ -8,6 +8,7 @@ import com.codveda.backend.exception.UnauthorizedException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.order.Order;
 import com.codveda.backend.model.order.OrderItem;
+import com.codveda.backend.response.ApiResponse;
 import com.codveda.backend.service.UserService;
 import com.codveda.backend.service.ecommerce.OrderService;
 import jakarta.validation.Valid;
@@ -33,35 +34,35 @@ public class OrderController {
     }
 
     @PostMapping
-    public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request) {
+    public ApiResponse<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         User user = getCurrentUser();
         Order order = orderService.createOrder(user, request);
-        return toResponse(order);
+        return ApiResponse.success("Order created", toResponse(order));
     }
 
     @GetMapping
-    public Page<OrderResponse> listOrders(Pageable pageable) {
+    public ApiResponse<Page<OrderResponse>> listOrders(Pageable pageable) {
         User user = getCurrentUser();
-        return orderService.findOrders(user, pageable).map(this::toResponse);
+        return ApiResponse.success(orderService.findOrders(user, pageable).map(this::toResponse));
     }
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public Page<OrderResponse> listOrdersForAdmin(Pageable pageable) {
-        return orderService.findAllOrders(pageable).map(this::toResponse);
+    public ApiResponse<Page<OrderResponse>> listOrdersForAdmin(Pageable pageable) {
+        return ApiResponse.success(orderService.findAllOrders(pageable).map(this::toResponse));
     }
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public OrderResponse updateOrderStatus(@PathVariable Long id, @Valid @RequestBody UpdateOrderStatusRequest request) {
-        return toResponse(orderService.updateOrderStatus(id, request.getStatus()));
+    public ApiResponse<OrderResponse> updateOrderStatus(@PathVariable Long id, @Valid @RequestBody UpdateOrderStatusRequest request) {
+        return ApiResponse.success("Order status updated", toResponse(orderService.updateOrderStatus(id, request.getStatus())));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("Order deleted", null));
     }
 
     private User getCurrentUser() {

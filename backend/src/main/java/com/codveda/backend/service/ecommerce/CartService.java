@@ -1,6 +1,7 @@
 package com.codveda.backend.service.ecommerce;
 
 import com.codveda.backend.exception.NotFoundException;
+import com.codveda.backend.exception.BadRequestException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
 import com.codveda.backend.model.cart.CartItem;
@@ -43,6 +44,12 @@ public class CartService {
         Cart cart = getOrCreateCart(user);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
+        if (!Boolean.TRUE.equals(product.getActive())) {
+            throw new BadRequestException("Product is inactive");
+        }
+        if (quantity <= 0) {
+            throw new BadRequestException("Quantity must be at least 1");
+        }
 
         CartItem existingItem = cart.getCartItems().stream()
                 .filter(item -> item.getProduct().getId().equals(productId))
@@ -50,9 +57,16 @@ public class CartService {
                 .orElse(null);
 
         if (existingItem != null) {
-            existingItem.setQuantity(existingItem.getQuantity() + quantity);
+            int nextQuantity = existingItem.getQuantity() + quantity;
+            if (nextQuantity > product.getStock()) {
+                throw new BadRequestException("Requested quantity exceeds current stock");
+            }
+            existingItem.setQuantity(nextQuantity);
             cartItemRepository.save(existingItem);
         } else {
+            if (quantity > product.getStock()) {
+                throw new BadRequestException("Requested quantity exceeds current stock");
+            }
             CartItem item = new CartItem();
             item.setCart(cart);
             item.setProduct(product);

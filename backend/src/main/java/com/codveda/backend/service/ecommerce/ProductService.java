@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
@@ -32,6 +33,16 @@ public class ProductService {
     @Cacheable("products")
     public Page<Product> findActive(Pageable pageable) {
         return productRepository.findAllByActiveTrue(pageable);
+    }
+
+    @Cacheable("products")
+    public Page<Product> searchForPublic(String q, BigDecimal maxPrice, boolean inStock, Pageable pageable) {
+        return productRepository.search(true, q, maxPrice, inStock, pageable);
+    }
+
+    @Cacheable("products")
+    public Page<Product> searchForAdmin(String q, BigDecimal maxPrice, boolean inStock, Boolean active, Pageable pageable) {
+        return productRepository.search(active, q, maxPrice, inStock, pageable);
     }
 
     public Optional<Product> findById(Long id) {

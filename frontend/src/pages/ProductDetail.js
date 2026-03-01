@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import api from "../api";
+import api from "../services/api";
 import { useAuth } from "../AuthContext";
 import { useCart } from "../CartContext";
 import { useToast } from "../components/ui/use-toast";

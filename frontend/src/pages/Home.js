@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../api";
+import api from "../services/api";
 import ProductCard from "../components/product/ProductCard";
 import { useAuth } from "../AuthContext";
 import { useCart } from "../CartContext";

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../AuthContext";
 import { connectStomp, subscribeStomp } from "../lib/stomp";
 import { useToast } from "../components/ui/use-toast";
-import api from "../api";
+import api from "../services/api";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);

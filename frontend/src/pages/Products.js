@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import api from "../api";
+import api from "../services/api";
 import ProductCard from "../components/product/ProductCard";
 import { useAuth } from "../AuthContext";
 import { useCart } from "../CartContext";
@@ -25,6 +25,8 @@ const Products = () => {
   const [stockOnly, setStockOnly] = useState(false);
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
   const [quantities, setQuantities] = useState({});
 
   useEffect(() => {
@@ -32,56 +34,46 @@ const Products = () => {
   }, [initialQuery]);
 
   useEffect(() => {
+    const sortMap = {
+      newest: "createdAt,desc",
+      "price-asc": "price,asc",
+      "price-desc": "price,desc",
+      name: "name,asc",
+    };
+
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const response = await api.get("/api/products?page=0&size=200&sort=createdAt,desc");
-        setProducts(response.data.content ?? []);
+        const params = {
+          page: Math.max(0, page - 1),
+          size: pageSize,
+          sort: sortMap[sort] ?? "createdAt,desc",
+        };
+        if (query.trim()) {
+          params.q = query.trim();
+        }
+        if (maxPrice !== "") {
+          params.maxPrice = Number(maxPrice);
+        }
+        if (stockOnly) {
+          params.inStock = true;
+        }
+
+        const response = await api.get("/api/products", { params });
+        setProducts(response.data?.content ?? []);
+        setTotalPages(Math.max(1, response.data?.totalPages ?? 1));
+        setTotalElements(response.data?.totalElements ?? 0);
       } catch (error) {
-        // Handled by global API interceptor toast.
+        setProducts([]);
+        setTotalPages(1);
+        setTotalElements(0);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, []);
-
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
-
-    if (query.trim()) {
-      const normalized = query.toLowerCase();
-      result = result.filter(
-        (product) =>
-          product.name?.toLowerCase().includes(normalized) ||
-          product.description?.toLowerCase().includes(normalized)
-      );
-    }
-
-    if (maxPrice) {
-      result = result.filter((product) => Number(product.price) <= Number(maxPrice));
-    }
-
-    if (stockOnly) {
-      result = result.filter((product) => (product.stock ?? 0) > 0);
-    }
-
-    if (sort === "price-asc") {
-      result.sort((a, b) => Number(a.price) - Number(b.price));
-    } else if (sort === "price-desc") {
-      result.sort((a, b) => Number(b.price) - Number(a.price));
-    } else if (sort === "name") {
-      result.sort((a, b) => a.name.localeCompare(b.name));
-    } else {
-      result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-    }
-
-    return result;
-  }, [products, query, maxPrice, stockOnly, sort]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
-  const paginatedProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize);
+  }, [page, query, maxPrice, stockOnly, sort]);
 
   useEffect(() => {
     setPage(1);
@@ -141,7 +133,7 @@ const Products = () => {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-black">Shop</h1>
-          <p className="text-sm text-slate-600">{filteredProducts.length} products</p>
+          <p className="text-sm text-slate-600">{totalElements} products</p>
         </div>
 
         {loading ? (
@@ -149,7 +141,7 @@ const Products = () => {
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {paginatedProducts.map((product) => (
+              {products.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -161,7 +153,7 @@ const Products = () => {
               ))}
             </div>
 
-            {paginatedProducts.length === 0 && (
+            {products.length === 0 && (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-600">
                 No products match your filters.
               </div>

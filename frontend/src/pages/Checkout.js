@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api";
+import api from "../services/api";
 import InputField from "../components/form/InputField";
 import SubmitButton from "../components/form/SubmitButton";
 import { useToast } from "../components/ui/use-toast";

@@ -1,10 +1,14 @@
 package com.codveda.backend.config;
 
 import com.codveda.backend.security.JwtAuthenticationFilter;
+import com.codveda.backend.security.AuthRateLimitFilter;
+import com.codveda.backend.exception.ApiError;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -20,6 +24,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,19 +36,24 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtFilter,
+            AuthRateLimitFilter authRateLimitFilter
+    ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) ->
-                                response.sendError(401, "Unauthorized"))
+                                writeError(response, 401, "Unauthorized", request.getRequestURI()))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                writeError(response, 403, "Access denied", request.getRequestURI()))
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/graphql").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers("/api/products/**").hasRole("ADMIN")
@@ -55,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/orders/**").hasRole("USER")
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -95,5 +107,18 @@ public class SecurityConfig {
             throw new IllegalStateException("Wildcard CORS origin is not allowed when credentials are enabled");
         }
         return origins;
+    }
+
+    private void writeError(jakarta.servlet.http.HttpServletResponse response, int status, String message, String path) throws IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        ApiError payload = new ApiError(
+                Instant.now(),
+                status,
+                status == 401 ? "Unauthorized" : "Forbidden",
+                message,
+                path
+        );
+        response.getWriter().write(new ObjectMapper().writeValueAsString(payload));
     }
 }

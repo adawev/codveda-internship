@@ -6,6 +6,7 @@ import com.codveda.backend.controller.dto.user.AdminUserUpdateRequest;
 import com.codveda.backend.controller.dto.user.UserSelfUpdateRequest;
 import com.codveda.backend.exception.UnauthorizedException;
 import com.codveda.backend.model.User;
+import com.codveda.backend.response.ApiResponse;
 import com.codveda.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -28,51 +29,51 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody UserCreateRequest request) {
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(request.getPassword());
         user.setRole(request.getRole());
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(userService.save(user)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("User created", toResponse(userService.save(user))));
     }
 
     @GetMapping
-    public Page<UserResponse> getAllUsers(Pageable pageable) {
-        return userService.findAll(pageable).map(this::toResponse);
+    public ApiResponse<Page<UserResponse>> getAllUsers(Pageable pageable) {
+        return ApiResponse.success(userService.findAll(pageable).map(this::toResponse));
     }
 
     @GetMapping("/me")
-    public UserResponse getCurrentUser() {
-        return toResponse(resolveCurrentUser());
+    public ApiResponse<UserResponse> getCurrentUser() {
+        return ApiResponse.success(toResponse(resolveCurrentUser()));
     }
 
     @GetMapping("/{id}")
-    public UserResponse getUserById(@PathVariable Long id) {
-        return toResponse(userService.findByIdOrThrow(id));
+    public ApiResponse<UserResponse> getUserById(@PathVariable Long id) {
+        return ApiResponse.success(toResponse(userService.findByIdOrThrow(id)));
     }
 
     @PutMapping("/me")
-    public UserResponse updateCurrentUser(@Valid @RequestBody UserSelfUpdateRequest request) {
+    public ApiResponse<UserResponse> updateCurrentUser(@Valid @RequestBody UserSelfUpdateRequest request) {
         if (request.hasForbiddenRoleField()) {
             throw new AccessDeniedException("Role change is not allowed in self update");
         }
         User current = resolveCurrentUser();
         applySelfUpdates(current, request);
-        return toResponse(userService.save(current));
+        return ApiResponse.success("Profile updated", toResponse(userService.save(current)));
     }
 
     @PutMapping("/{id}")
-    public UserResponse updateUser(@PathVariable Long id, @Valid @RequestBody AdminUserUpdateRequest request) {
+    public ApiResponse<UserResponse> updateUser(@PathVariable Long id, @Valid @RequestBody AdminUserUpdateRequest request) {
         User existing = userService.findByIdOrThrow(id);
         applyAdminUpdates(existing, request);
-        return toResponse(userService.save(existing));
+        return ApiResponse.success("User updated", toResponse(userService.save(existing)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         userService.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("User deleted", null));
     }
 
     private UserResponse toResponse(User user) {

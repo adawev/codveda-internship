@@ -12,7 +12,14 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "cart_items")
+@Table(
+        name = "cart_items",
+        indexes = {
+                @Index(name = "idx_cart_items_cart_id", columnList = "cart_id"),
+                @Index(name = "idx_cart_items_product_id", columnList = "product_id"),
+                @Index(name = "idx_cart_items_cart_product_unique", columnList = "cart_id,product_id", unique = true)
+        }
+)
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../api";
+import api from "../services/api";
 import { useAuth } from "../AuthContext";
 import InputField from "../components/form/InputField";
 import PasswordField from "../components/form/PasswordField";

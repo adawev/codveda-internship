@@ -7,6 +7,7 @@ import com.codveda.backend.exception.UnauthorizedException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
 import com.codveda.backend.model.cart.CartItem;
+import com.codveda.backend.response.ApiResponse;
 import com.codveda.backend.service.UserService;
 import com.codveda.backend.service.ecommerce.CartService;
 import jakarta.validation.Valid;
@@ -29,24 +30,24 @@ public class CartController {
     }
 
     @GetMapping
-    public CartResponse getCart() {
+    public ApiResponse<CartResponse> getCart() {
         User user = getCurrentUser();
         Cart cart = cartService.getOrCreateCart(user);
-        return toResponse(cart);
+        return ApiResponse.success(toResponse(cart));
     }
 
     @PostMapping("/items")
-    public CartResponse addToCart(@Valid @RequestBody AddToCartRequest request) {
+    public ApiResponse<CartResponse> addToCart(@Valid @RequestBody AddToCartRequest request) {
         User user = getCurrentUser();
         Cart cart = cartService.addToCart(user, request.getProductId(), request.getQuantity());
-        return toResponse(cart);
+        return ApiResponse.success("Cart updated", toResponse(cart));
     }
 
     @DeleteMapping("/items/{itemId}")
-    public ResponseEntity<Void> removeItem(@PathVariable Long itemId) {
+    public ResponseEntity<ApiResponse<Void>> removeItem(@PathVariable Long itemId) {
         User user = getCurrentUser();
         cartService.removeItem(user, itemId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("Cart item removed", null));
     }
 
     private User getCurrentUser() {
