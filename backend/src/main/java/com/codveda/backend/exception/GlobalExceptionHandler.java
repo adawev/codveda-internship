@@ -78,6 +78,14 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Invalid data provided.", request);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
+        String message = ex.getMessage() != null && ex.getMessage().toLowerCase().contains("page")
+                ? "Invalid pagination parameters"
+                : "Invalid request";
+        return build(HttpStatus.BAD_REQUEST, message, request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnhandled(Exception ex, HttpServletRequest request) {
         log.error("Unhandled server error at {}", request.getRequestURI(), ex);

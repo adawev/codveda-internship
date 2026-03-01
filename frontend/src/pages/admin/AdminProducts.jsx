@@ -19,6 +19,10 @@ const AdminProducts = () => {
   const { toast } = useToast();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [size] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
   const [actionId, setActionId] = useState(null);
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -26,21 +30,26 @@ const AdminProducts = () => {
   const [saving, setSaving] = useState(false);
   const [pendingDeleteProduct, setPendingDeleteProduct] = useState(null);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (nextPage = page) => {
     setLoading(true);
     try {
-      const response = await getProducts();
+      const response = await getProducts(Math.max(0, nextPage - 1), size);
       setProducts(response.data.content ?? []);
+      setTotalPages(Math.max(1, response.data.totalPages ?? 1));
+      setTotalElements(response.data.totalElements ?? 0);
     } catch (error) {
       // Handled by global API interceptor toast.
+      setProducts([]);
+      setTotalPages(1);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    fetchProducts(page);
+  }, [page]);
 
   const openEdit = (product) => {
     setEditing(product);
@@ -66,7 +75,7 @@ const AdminProducts = () => {
     try {
       await removeProduct(pendingDeleteProduct.id);
       toast({ title: "Product deleted", variant: "success" });
-      await fetchProducts();
+      await fetchProducts(page);
       setPendingDeleteProduct(null);
     } catch (error) {
       // Handled by global API interceptor toast.
@@ -87,7 +96,7 @@ const AdminProducts = () => {
         active: !product.active,
       });
       toast({ title: "Status updated", variant: "success" });
-      await fetchProducts();
+      await fetchProducts(page);
     } catch (error) {
       // Handled by global API interceptor toast.
     } finally {
@@ -113,7 +122,7 @@ const AdminProducts = () => {
       toast({ title: "Product updated", variant: "success" });
       setEditing(null);
       setForm(emptyForm);
-      await fetchProducts();
+      await fetchProducts(page);
     } catch (error) {
       // Handled by global API interceptor toast.
     } finally {
@@ -136,7 +145,8 @@ const AdminProducts = () => {
       toast({ title: "Product created", variant: "success" });
       setCreating(false);
       setForm(emptyForm);
-      await fetchProducts();
+      setPage(1);
+      await fetchProducts(1);
     } catch (error) {
       // Handled by global API interceptor toast.
     } finally {
@@ -147,7 +157,10 @@ const AdminProducts = () => {
   return (
     <section className="space-y-4">
       <header className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-slate-900">Products</h2>
+        <div>
+          <h2 className="text-xl font-semibold text-slate-900">Products</h2>
+          <p className="text-xs text-slate-500">{totalElements} products</p>
+        </div>
         <Button
           size="sm"
           onClick={() => {
@@ -233,6 +246,21 @@ const AdminProducts = () => {
               ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-center gap-2 pt-2">
+        <Button variant="secondary" size="sm" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page === 1}>
+          Prev
+        </Button>
+        <span className="text-sm text-slate-600">Page {page} of {totalPages}</span>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+          disabled={page >= totalPages}
+        >
+          Next
+        </Button>
       </div>
 
       <Modal open={!!editing} title="Edit Product" onClose={() => setEditing(null)}>

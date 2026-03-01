@@ -14,9 +14,12 @@ import com.codveda.backend.service.UserService;
 import com.codveda.backend.service.ecommerce.CartService;
 import com.codveda.backend.service.ecommerce.OrderService;
 import com.codveda.backend.config.ws.WebSocketAuthChannelInterceptor;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -31,8 +34,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -41,8 +47,10 @@ import java.util.concurrent.Executors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import io.jsonwebtoken.security.Keys;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -71,6 +79,8 @@ class SecurityHardeningIntegrationTest {
     private JwtService jwtService;
     @Autowired
     private WebSocketAuthChannelInterceptor wsInterceptor;
+    @Value("${app.jwt.secret}")
+    private String jwtSecret;
 
     @BeforeEach
     void clean() {
@@ -118,6 +128,54 @@ class SecurityHardeningIntegrationTest {
         ));
         Message<byte[]> unauthorizedSubscribeMessage = MessageBuilder.createMessage(new byte[0], unauthorizedSubscribe.getMessageHeaders());
         assertThrows(AccessDeniedException.class, () -> wsInterceptor.preSend(unauthorizedSubscribeMessage, channel));
+    }
+
+    @Test
+    void websocketRejectsRefreshAndExpiredTokens() {
+        MessageChannel channel = mock(MessageChannel.class);
+        User user = createUser("socket-expiry@test.local", Role.USER);
+
+        String refreshToken = jwtService.generateRefreshToken(user);
+        StompHeaderAccessor refreshConnect = StompHeaderAccessor.create(StompCommand.CONNECT);
+        refreshConnect.setNativeHeader("Authorization", "Bearer " + refreshToken);
+        Message<byte[]> refreshConnectMessage = MessageBuilder.createMessage(new byte[0], refreshConnect.getMessageHeaders());
+        assertThrows(AccessDeniedException.class, () -> wsInterceptor.preSend(refreshConnectMessage, channel));
+
+        String expiredAccess = generateExpiredAccessToken(user.getEmail());
+        StompHeaderAccessor expiredConnect = StompHeaderAccessor.create(StompCommand.CONNECT);
+        expiredConnect.setNativeHeader("Authorization", "Bearer " + expiredAccess);
+        Message<byte[]> expiredConnectMessage = MessageBuilder.createMessage(new byte[0], expiredConnect.getMessageHeaders());
+        assertThrows(AccessDeniedException.class, () -> wsInterceptor.preSend(expiredConnectMessage, channel));
+    }
+
+    @Test
+    void expiredAndMalformedAccessTokensCannotAccessProtectedEndpoints() throws Exception {
+        User user = createUser("expired-token@test.local", Role.USER);
+        String expiredToken = generateExpiredAccessToken(user.getEmail());
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + expiredToken))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer malformed.jwt.token"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void forbiddenRoleAccessMatrixIsEnforced() throws Exception {
+        User user = createUser("matrix-user@test.local", Role.USER);
+        User admin = createUser("matrix-admin@test.local", Role.ADMIN);
+        String userToken = jwtService.generateAccessToken(user);
+        String adminToken = jwtService.generateAccessToken(admin);
+
+        mockMvc.perform(get("/api/users")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/cart")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -194,5 +252,17 @@ class SecurityHardeningIntegrationTest {
         user.setPassword("Password@123");
         user.setRole(role);
         return userService.save(user);
+    }
+
+    private String generateExpiredAccessToken(String subject) {
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        Date now = new Date();
+        return Jwts.builder()
+                .setSubject(subject)
+                .setIssuedAt(new Date(now.getTime() - 120_000))
+                .setExpiration(new Date(now.getTime() - 60_000))
+                .claim("token_type", "access")
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
     }
 }

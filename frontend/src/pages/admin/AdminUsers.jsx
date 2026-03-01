@@ -16,24 +16,33 @@ const AdminUsers = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [size] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
   const [actionId, setActionId] = useState(null);
   const [pendingDeleteUser, setPendingDeleteUser] = useState(null);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (nextPage = page) => {
     setLoading(true);
     try {
-      const response = await getUsers();
+      const response = await getUsers(Math.max(0, nextPage - 1), size);
       setUsers(response.data.content ?? []);
+      setTotalPages(Math.max(1, response.data.totalPages ?? 1));
+      setTotalElements(response.data.totalElements ?? 0);
     } catch (error) {
       // Handled by global API interceptor toast.
+      setUsers([]);
+      setTotalPages(1);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(page);
+  }, [page]);
 
   const onDelete = async (user) => {
     if (user.role === "ADMIN") {
@@ -57,7 +66,7 @@ const AdminUsers = () => {
     try {
       await removeUser(pendingDeleteUser.id);
       toast({ title: "User deleted", variant: "success" });
-      await fetchUsers();
+      await fetchUsers(page);
       setPendingDeleteUser(null);
     } catch (error) {
       // Handled by global API interceptor toast.
@@ -70,6 +79,7 @@ const AdminUsers = () => {
     <section className="space-y-4">
       <header>
         <h2 className="text-xl font-semibold text-slate-900">Users</h2>
+        <p className="text-xs text-slate-500">{totalElements} users</p>
       </header>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
@@ -127,6 +137,21 @@ const AdminUsers = () => {
               ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-center gap-2 pt-2">
+        <Button variant="secondary" size="sm" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page === 1}>
+          Prev
+        </Button>
+        <span className="text-sm text-slate-600">Page {page} of {totalPages}</span>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+          disabled={page >= totalPages}
+        >
+          Next
+        </Button>
       </div>
 
       <ConfirmDialog

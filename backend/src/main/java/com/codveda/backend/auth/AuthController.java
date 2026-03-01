@@ -31,6 +31,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Duration;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -98,7 +99,7 @@ public class AuthController {
 
         User user = userService.findByEmail(request.getEmail()).orElseThrow();
         String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = refreshTokenService.issueToken(user, user);
+        String refreshToken = refreshTokenService.issueToken(user, user, UUID.randomUUID().toString());
 
         log.info("User logged in: {}", user.getEmail());
         return ResponseEntity.ok()
@@ -131,7 +132,6 @@ public class AuthController {
         }
 
         User user = userService.findByEmailOrThrow(email);
-        refreshTokenService.assertUsable(refreshToken, user);
         if (!jwtService.isTokenValid(refreshToken, user)) {
             throw new UnauthorizedException("Expired or invalid refresh token");
         }

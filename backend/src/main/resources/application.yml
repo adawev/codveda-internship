@@ -19,6 +19,11 @@ app:
   auth:
     refresh-cookie-name: ${APP_AUTH_REFRESH_COOKIE_NAME:refresh_token}
     refresh-cookie-secure: ${APP_AUTH_REFRESH_COOKIE_SECURE:false}
+  security:
+    rate-limit:
+      auth:
+        max-attempts: ${APP_SECURITY_RATE_LIMIT_AUTH_MAX_ATTEMPTS:30}
+        window-ms: ${APP_SECURITY_RATE_LIMIT_AUTH_WINDOW_MS:60000}
   websocket:
     broker:
       relay-enabled: ${APP_WS_RELAY_ENABLED:false}

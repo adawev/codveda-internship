@@ -21,26 +21,35 @@ const AdminOrders = () => {
   const { accessToken } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [size] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
   const [actionId, setActionId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [pendingDeleteOrder, setPendingDeleteOrder] = useState(null);
   const [socketConnected, setSocketConnected] = useState(false);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (nextPage = page) => {
     setLoading(true);
     try {
-      const response = await getOrders();
+      const response = await getOrders(Math.max(0, nextPage - 1), size);
       setOrders(response.data.content ?? []);
+      setTotalPages(Math.max(1, response.data.totalPages ?? 1));
+      setTotalElements(response.data.totalElements ?? 0);
     } catch (error) {
       // Handled by global API interceptor toast.
+      setOrders([]);
+      setTotalPages(1);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(page);
+  }, [page]);
 
   useEffect(() => {
     if (!accessToken) {
@@ -81,7 +90,7 @@ const AdminOrders = () => {
     try {
       await updateOrderStatus(order.id, status);
       toast({ title: "Order updated", variant: "success" });
-      await fetchOrders();
+      await fetchOrders(page);
     } catch (error) {
       // Handled by global API interceptor toast.
     } finally {
@@ -105,7 +114,7 @@ const AdminOrders = () => {
       if (selectedOrder?.id === pendingDeleteOrder.id) {
         setSelectedOrder(null);
       }
-      await fetchOrders();
+      await fetchOrders(page);
       setPendingDeleteOrder(null);
     } catch (error) {
       // Handled by global API interceptor toast.
@@ -118,6 +127,7 @@ const AdminOrders = () => {
     <section className="space-y-4">
       <header>
         <h2 className="text-xl font-semibold text-slate-900">Orders</h2>
+        <p className="text-xs text-slate-500">{totalElements} orders</p>
         {socketConnected ? (
           <p className="text-xs font-semibold text-emerald-600">Live admin updates active</p>
         ) : (
@@ -194,6 +204,21 @@ const AdminOrders = () => {
               ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-center gap-2 pt-2">
+        <Button variant="secondary" size="sm" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page === 1}>
+          Prev
+        </Button>
+        <span className="text-sm text-slate-600">Page {page} of {totalPages}</span>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+          disabled={page >= totalPages}
+        >
+          Next
+        </Button>
       </div>
 
       <Modal open={!!selectedOrder} title={`Order #${selectedOrder?.id ?? ""}`} onClose={() => setSelectedOrder(null)}>

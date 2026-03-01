@@ -36,11 +36,19 @@ public class JwtService {
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return generateRefreshToken(userDetails, UUID.randomUUID().toString());
+        return generateRefreshToken(userDetails, UUID.randomUUID().toString(), UUID.randomUUID().toString());
     }
 
     public String generateRefreshToken(UserDetails userDetails, String tokenId) {
-        return generateToken(Map.of("token_type", "refresh", "jti", tokenId), userDetails, refreshExpirationMs);
+        return generateRefreshToken(userDetails, tokenId, UUID.randomUUID().toString());
+    }
+
+    public String generateRefreshToken(UserDetails userDetails, String tokenId, String familyId) {
+        return generateToken(
+                Map.of("token_type", "refresh", "jti", tokenId, "family_id", familyId),
+                userDetails,
+                refreshExpirationMs
+        );
     }
 
     public String extractUsername(String token) {
@@ -53,6 +61,10 @@ public class JwtService {
 
     public String extractTokenId(String token) {
         return extractClaim(token, claims -> claims.getId() != null ? claims.getId() : claims.get("jti", String.class));
+    }
+
+    public String extractFamilyId(String token) {
+        return extractClaim(token, claims -> claims.get("family_id", String.class));
     }
 
     public Date extractExpiration(String token) {

@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.hasSize;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -130,6 +131,39 @@ class ProductCrudIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void paginationBoundariesHandleOverflowAndInvalidSize() throws Exception {
+        String adminToken = "Bearer " + jwtService.generateAccessToken(createUser("admin-pagination@test.local", Role.ADMIN));
+
+        for (int i = 0; i < 3; i++) {
+            mockMvc.perform(post("/api/products")
+                            .header("Authorization", adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "name":"Product %d",
+                                      "description":"Page test",
+                                      "price":99.99,
+                                      "stock":3,
+                                      "active":true
+                                    }
+                                    """.formatted(i)))
+                    .andExpect(status().isCreated());
+        }
+
+        mockMvc.perform(get("/api/products")
+                        .param("page", "50")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content", hasSize(0)));
+
+        mockMvc.perform(get("/api/products")
+                        .param("page", "0")
+                        .param("size", "abc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.size").value(10));
     }
 
     private User createUser(String email, Role role) {

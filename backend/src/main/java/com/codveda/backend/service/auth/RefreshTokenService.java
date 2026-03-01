@@ -30,23 +30,29 @@ public class RefreshTokenService {
 
     @Transactional
     public String issueToken(UserDetails userDetails, User user) {
+        return issueToken(userDetails, user, UUID.randomUUID().toString());
+    }
+
+    @Transactional
+    public String issueToken(UserDetails userDetails, User user, String familyId) {
         String tokenId = UUID.randomUUID().toString();
-        String token = jwtService.generateRefreshToken(userDetails, tokenId);
+        String token = jwtService.generateRefreshToken(userDetails, tokenId, familyId);
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
         refreshToken.setTokenHash(hash(token));
+        refreshToken.setFamilyId(familyId);
         refreshToken.setExpiresAt(LocalDateTime.ofInstant(jwtService.extractExpiration(token).toInstant(), ZoneId.systemDefault()));
         refreshTokenRepository.save(refreshToken);
         return token;
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = UnauthorizedException.class)
     public String rotateToken(String currentToken, User user) {
-        RefreshToken existing = validateStoredToken(currentToken, user);
+        RefreshToken existing = validateStoredTokenForRotation(currentToken, user);
 
         String tokenId = UUID.randomUUID().toString();
-        String newToken = jwtService.generateRefreshToken(user, tokenId);
+        String newToken = jwtService.generateRefreshToken(user, tokenId, existing.getFamilyId());
         String newTokenHash = hash(newToken);
 
         existing.setRevokedAt(LocalDateTime.now());
@@ -57,6 +63,7 @@ public class RefreshTokenService {
         RefreshToken replacement = new RefreshToken();
         replacement.setUser(user);
         replacement.setTokenHash(newTokenHash);
+        replacement.setFamilyId(existing.getFamilyId());
         replacement.setExpiresAt(LocalDateTime.ofInstant(jwtService.extractExpiration(newToken).toInstant(), ZoneId.systemDefault()));
         refreshTokenRepository.save(replacement);
         return newToken;
@@ -89,7 +96,7 @@ public class RefreshTokenService {
 
     @Transactional(readOnly = true)
     public void assertUsable(String token, User user) {
-        validateStoredToken(token, user);
+        validateStoredTokenForRotation(token, user);
     }
 
     private RefreshToken validateStoredToken(String token, User user) {
@@ -105,6 +112,40 @@ public class RefreshTokenService {
             throw new UnauthorizedException("Refresh token expired");
         }
         return stored;
+    }
+
+    private RefreshToken validateStoredTokenForRotation(String token, User user) {
+        RefreshToken stored = refreshTokenRepository.findByTokenHash(hash(token))
+                .orElseThrow(() -> new UnauthorizedException("Refresh token not recognized"));
+
+        if (!stored.getUser().getId().equals(user.getId())) {
+            throw new UnauthorizedException("Refresh token does not belong to this user");
+        }
+
+        if (stored.isExpired()) {
+            throw new UnauthorizedException("Refresh token expired");
+        }
+
+        if (stored.isRevoked()) {
+            if (stored.getReplacedByTokenHash() != null || "ROTATED".equals(stored.getRevokeReason())) {
+                revokeFamily(stored.getUser(), stored.getFamilyId(), "REUSE_DETECTED");
+                throw new UnauthorizedException("Refresh token reuse detected; session invalidated");
+            }
+            throw new UnauthorizedException("Refresh token has been revoked");
+        }
+        return stored;
+    }
+
+    private void revokeFamily(User user, String familyId, String reason) {
+        List<RefreshToken> familyTokens = refreshTokenRepository.findAllByUserAndFamilyId(user, familyId);
+        LocalDateTime now = LocalDateTime.now();
+        familyTokens.forEach(token -> {
+            if (!token.isRevoked()) {
+                token.setRevokedAt(now);
+            }
+            token.setRevokeReason(reason);
+        });
+        refreshTokenRepository.saveAll(familyTokens);
     }
 
     private String hash(String raw) {

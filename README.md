@@ -28,7 +28,10 @@ Production-oriented full-stack e-commerce platform with JWT auth, refresh-token 
 - Error responses use a global exception handler and consistent `ApiError` schema.
 - Success responses use a consistent `ApiResponse<T>` wrapper.
 - Refresh tokens are persisted and rotated to reduce replay risk.
+- Refresh tokens use token-family tracking with replay detection; reuse of a rotated token revokes the full family.
 - WebSocket authentication is JWT-based and topic subscriptions are authorized per role.
+- Auth rate limiting uses a pluggable store abstraction for distributed limiter backends.
+- Product search uses PostgreSQL `ILIKE` with trigram indexes for scalable text search.
 
 ## Prerequisites
 
@@ -92,6 +95,20 @@ npm test -- --watchAll=false
 - Access token is held in memory on client.
 - Refresh token is HttpOnly cookie.
 - `secure=true` for refresh cookie in production profile.
+- Refresh cookie uses `SameSite=Strict` and path scoping to `/api/auth`.
 - CORS is explicit and wildcard origin is blocked when credentials are enabled.
 - OSIV is disabled.
+- WebSocket auth accepts only non-expired `token_type=access` JWTs.
+- Refresh replay protection:
+  - each login creates a refresh token family
+  - refresh rotation keeps the same family
+  - reuse of a rotated token revokes the full family and blocks future refreshes in that family
 
+## CSRF Strategy
+
+Refresh is cookie-based and only available at `POST /api/auth/refresh`. CSRF is mitigated by:
+- `SameSite=Strict` refresh cookie (cross-site requests do not include the cookie),
+- HttpOnly cookie with narrow auth path scope (`/api/auth`),
+- strict explicit CORS origins with credentials and wildcard origin rejection.
+
+Given these controls and the non-browser storage model for access tokens, a double-submit token is not required for this internship-scale architecture.

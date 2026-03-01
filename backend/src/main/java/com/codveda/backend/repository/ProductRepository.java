@@ -16,14 +16,25 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> findAllByActiveTrue(Pageable pageable);
     Optional<Product> findByIdAndActiveTrue(Long id);
 
-    @Query("""
-            select p from Product p
-            where (:active is null or p.active = :active)
-              and (:q is null or :q = '' or lower(p.name) like lower(concat('%', :q, '%'))
-                   or lower(coalesce(p.description, '')) like lower(concat('%', :q, '%')))
-              and (:maxPrice is null or p.price <= :maxPrice)
-              and (:inStock = false or p.stock > 0)
-            """)
+    @Query(
+            value = """
+                    SELECT p.* FROM products p
+                    WHERE (:active IS NULL OR p.active = :active)
+                      AND (:q IS NULL OR :q = '' OR p.name ILIKE CONCAT('%', :q, '%')
+                           OR COALESCE(p.description, '') ILIKE CONCAT('%', :q, '%'))
+                      AND (:maxPrice IS NULL OR p.price <= :maxPrice)
+                      AND (:inStock = FALSE OR p.stock > 0)
+                    """,
+            countQuery = """
+                    SELECT COUNT(*) FROM products p
+                    WHERE (:active IS NULL OR p.active = :active)
+                      AND (:q IS NULL OR :q = '' OR p.name ILIKE CONCAT('%', :q, '%')
+                           OR COALESCE(p.description, '') ILIKE CONCAT('%', :q, '%'))
+                      AND (:maxPrice IS NULL OR p.price <= :maxPrice)
+                      AND (:inStock = FALSE OR p.stock > 0)
+                    """,
+            nativeQuery = true
+    )
     Page<Product> search(
             @Param("active") Boolean active,
             @Param("q") String q,

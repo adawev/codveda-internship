@@ -14,6 +14,8 @@ import com.codveda.backend.service.ecommerce.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,14 +43,18 @@ public class OrderController {
     }
 
     @GetMapping
-    public ApiResponse<Page<OrderResponse>> listOrders(Pageable pageable) {
+    public ApiResponse<Page<OrderResponse>> listOrders(
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
         User user = getCurrentUser();
         return ApiResponse.success(orderService.findOrders(user, pageable).map(this::toResponse));
     }
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<Page<OrderResponse>> listOrdersForAdmin(Pageable pageable) {
+    public ApiResponse<Page<OrderResponse>> listOrdersForAdmin(
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
         return ApiResponse.success(orderService.findAllOrders(pageable).map(this::toResponse));
     }
 

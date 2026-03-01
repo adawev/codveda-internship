@@ -1,6 +1,7 @@
 package com.codveda.backend.security;
 
 import com.codveda.backend.exception.ApiError;
+import com.codveda.backend.security.ratelimit.RateLimitStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,15 +13,25 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class AuthRateLimitFilter extends OncePerRequestFilter {
-    private static final int LIMIT = 30;
-    private static final long WINDOW_MS = 60_000;
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private final Map<String, Counter> counters = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper;
+    private final RateLimitStore rateLimitStore;
+    private final int maxAttempts;
+    private final long windowMs;
+
+    public AuthRateLimitFilter(
+            RateLimitStore rateLimitStore,
+            ObjectMapper objectMapper,
+            @org.springframework.beans.factory.annotation.Value("${app.security.rate-limit.auth.max-attempts:30}") int maxAttempts,
+            @org.springframework.beans.factory.annotation.Value("${app.security.rate-limit.auth.window-ms:60000}") long windowMs
+    ) {
+        this.rateLimitStore = rateLimitStore;
+        this.objectMapper = objectMapper;
+        this.maxAttempts = maxAttempts;
+        this.windowMs = windowMs;
+    }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -35,9 +46,9 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String key = request.getRemoteAddr() + ":" + request.getRequestURI();
         long now = System.currentTimeMillis();
-        Counter counter = counters.compute(key, (k, existing) -> existing == null ? new Counter(now, 1) : existing.next(now));
+        int attempts = rateLimitStore.incrementAndGet(key, now, windowMs);
 
-        if (counter.count > LIMIT) {
+        if (attempts > maxAttempts) {
             response.setStatus(429);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             ApiError payload = new ApiError(
@@ -47,19 +58,10 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
                     "Too many authentication requests. Please retry in a minute.",
                     request.getRequestURI()
             );
-            response.getWriter().write(OBJECT_MAPPER.writeValueAsString(payload));
+            response.getWriter().write(objectMapper.writeValueAsString(payload));
             return;
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private record Counter(long windowStart, int count) {
-        Counter next(long now) {
-            if (now - windowStart > WINDOW_MS) {
-                return new Counter(now, 1);
-            }
-            return new Counter(windowStart, count + 1);
-        }
     }
 }

@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
         name = "refresh_tokens",
         indexes = {
                 @Index(name = "idx_refresh_token_user", columnList = "user_id"),
-                @Index(name = "idx_refresh_token_expires_at", columnList = "expires_at")
+                @Index(name = "idx_refresh_token_expires_at", columnList = "expires_at"),
+                @Index(name = "idx_refresh_token_family", columnList = "family_id")
         }
 )
 public class RefreshToken {
@@ -30,6 +31,9 @@ public class RefreshToken {
 
     @Column(nullable = false, unique = true, length = 64)
     private String tokenHash;
+
+    @Column(nullable = false, length = 64)
+    private String familyId;
 
     @Column(nullable = false)
     private LocalDateTime expiresAt;

@@ -59,6 +59,11 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
 
         String token = authHeader.substring(7);
         try {
+            String tokenType = jwtService.extractTokenType(token);
+            if (!"access".equals(tokenType)) {
+                throw new AccessDeniedException("Invalid JWT token type");
+            }
+
             String username = jwtService.extractUsername(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 

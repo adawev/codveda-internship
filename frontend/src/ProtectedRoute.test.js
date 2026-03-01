@@ -28,4 +28,28 @@ describe("ProtectedRoute", () => {
 
     expect(screen.getByText("redirect:/login")).toBeInTheDocument();
   });
+
+  test("redirects authenticated users without required role", () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      user: { role: "USER" },
+    });
+
+    render(<ProtectedRoute role="ADMIN"><div>Admin page</div></ProtectedRoute>);
+
+    expect(screen.getByText("redirect:/")).toBeInTheDocument();
+  });
+
+  test("renders child route when role matches", () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      user: { role: "ADMIN" },
+    });
+
+    render(<ProtectedRoute role="ADMIN"><div>Admin page</div></ProtectedRoute>);
+
+    expect(screen.getByText("Admin page")).toBeInTheDocument();
+  });
 });
