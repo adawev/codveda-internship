@@ -50,11 +50,11 @@ const ProductCard = ({ product, quantity, onQuantityChange, onQuantityAdjust, on
           <p className="text-sm text-amber-600">{rating} ★</p>
         </div>
 
-        <div className="grid grid-cols-[106px_1fr] gap-2">
-          <div className="flex h-10 items-center overflow-hidden rounded-md border border-slate-300 bg-white">
+        <div className="grid grid-cols-[122px_1fr] gap-2">
+          <div className="flex h-11 items-center overflow-hidden rounded-md border border-slate-300 bg-white">
             <button
               type="button"
-              className="inline-flex h-full w-8 items-center justify-center border-r border-slate-300 text-base font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-full w-9 items-center justify-center border-r border-slate-300 px-2 text-lg font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => onQuantityAdjust(product.id, -1, stockCount)}
               disabled={!isAuthenticated || !inStock || quantity <= 1}
               aria-label={`Decrease quantity for ${product.name}`}
@@ -67,12 +67,12 @@ const ProductCard = ({ product, quantity, onQuantityChange, onQuantityAdjust, on
               max={stockCount}
               value={quantity}
               onChange={(event) => onQuantityChange(product.id, event.target.value, stockCount)}
-              className="h-full w-full border-0 px-1 text-center text-sm focus:outline-none"
+              className="h-full w-full border-0 px-2 text-center text-base focus:outline-none"
               disabled={!isAuthenticated || !inStock}
             />
             <button
               type="button"
-              className="inline-flex h-full w-8 items-center justify-center border-l border-slate-300 text-base font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-full w-9 items-center justify-center border-l border-slate-300 px-2 text-lg font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => onQuantityAdjust(product.id, 1, stockCount)}
               disabled={!isAuthenticated || !inStock || quantity >= stockCount}
               aria-label={`Increase quantity for ${product.name}`}
