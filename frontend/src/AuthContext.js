@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import api from "./services/api";
 import { setAccessToken as setApiAccessToken } from "./services/api";
 
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener("auth:logout", handleForcedLogout);
   }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const response = await api.post("/api/auth/login", { email, password }, { suppressErrorToast: true });
     const { accessToken: newAccessToken, role, userId } = response.data;
 
@@ -57,21 +57,25 @@ export const AuthProvider = ({ children }) => {
     setUser({ email, role, id: userId });
 
     return { role, userId, email };
-  };
+  }, []);
 
-  const register = async (name, email, password) => {
+  const register = useCallback(async (name, email, password) => {
     await api.post("/api/auth/register", { name, email, password });
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
+    const hadToken = !!accessToken;
+    setAccessTokenState(null);
+    setUser(null);
+
     try {
-      await api.post("/api/auth/logout", {}, { suppressErrorToast: true });
+      if (hadToken) {
+        await api.post("/api/auth/logout", {}, { suppressErrorToast: true });
+      }
     } catch (error) {
       // Ignore logout API failures and clear local auth state anyway.
     }
-    setAccessTokenState(null);
-    setUser(null);
-  };
+  }, [accessToken]);
 
   const value = useMemo(
     () => ({
@@ -83,7 +87,7 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
     }),
-    [accessToken, user, isLoading]
+    [accessToken, user, isLoading, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
