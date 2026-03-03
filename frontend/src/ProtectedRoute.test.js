@@ -18,7 +18,7 @@ describe("ProtectedRoute", () => {
 
     render(<ProtectedRoute role="USER"><div>Private page</div></ProtectedRoute>);
 
-    expect(screen.getByText(/checking session/i)).toBeInTheDocument();
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 
   test("redirects unauthenticated users to login", () => {

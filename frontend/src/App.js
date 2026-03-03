@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import AppLayout from "./components/layout/AppLayout";
+import Loader from "./components/ui/loader";
 import { useAuth } from "./AuthContext";
 import AdminLayout from "./layouts/AdminLayout";
 
@@ -25,7 +26,7 @@ const StorefrontGuard = ({ children }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
-    return <p className="p-6 text-sm text-slate-500">Checking session...</p>;
+    return <Loader label="Loading..." />;
   }
 
   if (isAuthenticated && user?.role === "ADMIN") {

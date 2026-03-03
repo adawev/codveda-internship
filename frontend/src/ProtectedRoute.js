@@ -1,12 +1,13 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import Loader from "./components/ui/loader";
 
 const ProtectedRoute = ({ children, role }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
-    return <p className="p-6 text-sm text-slate-500">Checking session...</p>;
+    return <Loader label="Loading..." />;
   }
 
   if (!isAuthenticated) {
