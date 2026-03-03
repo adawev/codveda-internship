@@ -4,9 +4,10 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { normalizeImageUrl } from "../../lib/imageUrl";
 
-const ProductCard = ({ product, quantity, onQuantityChange, onAddToCart, isAuthenticated }) => {
+const ProductCard = ({ product, quantity, onQuantityChange, onQuantityAdjust, onAddToCart, isAuthenticated }) => {
   const rating = ((Number(product.id) % 5) + 1).toFixed(1);
   const inStock = (product.stock ?? 0) > 0;
+  const stockCount = Math.max(0, Number(product.stock) || 0);
   const imageUrl = normalizeImageUrl(product.imageUrl);
 
   return (
@@ -27,9 +28,11 @@ const ProductCard = ({ product, quantity, onQuantityChange, onAddToCart, isAuthe
       </Link>
 
       <div className="space-y-3 p-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           <h3 className="truncate text-base font-semibold text-slate-900">{product.name}</h3>
-          <Badge className={inStock ? "bg-emerald-600" : "bg-red-600"}>{inStock ? "In stock" : "Sold out"}</Badge>
+          <Badge className={`shrink-0 ${inStock ? "bg-emerald-600" : "bg-red-600"}`}>
+            {inStock ? `${stockCount} in stock` : "Sold out"}
+          </Badge>
         </div>
         <p
           className="text-sm text-slate-600"
@@ -47,15 +50,36 @@ const ProductCard = ({ product, quantity, onQuantityChange, onAddToCart, isAuthe
           <p className="text-sm text-amber-600">{rating} ★</p>
         </div>
 
-        <div className="grid grid-cols-[70px_1fr] gap-2">
-          <input
-            type="number"
-            min="1"
-            value={quantity}
-            onChange={(event) => onQuantityChange(product.id, event.target.value)}
-            className="h-10 rounded-md border border-slate-300 px-2 text-sm"
-            disabled={!isAuthenticated || !inStock}
-          />
+        <div className="grid grid-cols-[106px_1fr] gap-2">
+          <div className="flex h-10 items-center overflow-hidden rounded-md border border-slate-300 bg-white">
+            <button
+              type="button"
+              className="inline-flex h-full w-8 items-center justify-center border-r border-slate-300 text-base font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => onQuantityAdjust(product.id, -1, stockCount)}
+              disabled={!isAuthenticated || !inStock || quantity <= 1}
+              aria-label={`Decrease quantity for ${product.name}`}
+            >
+              -
+            </button>
+            <input
+              type="number"
+              min="1"
+              max={stockCount}
+              value={quantity}
+              onChange={(event) => onQuantityChange(product.id, event.target.value, stockCount)}
+              className="h-full w-full border-0 px-1 text-center text-sm focus:outline-none"
+              disabled={!isAuthenticated || !inStock}
+            />
+            <button
+              type="button"
+              className="inline-flex h-full w-8 items-center justify-center border-l border-slate-300 text-base font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => onQuantityAdjust(product.id, 1, stockCount)}
+              disabled={!isAuthenticated || !inStock || quantity >= stockCount}
+              aria-label={`Increase quantity for ${product.name}`}
+            >
+              +
+            </button>
+          </div>
           {isAuthenticated ? (
             <Button onClick={() => onAddToCart(product.id)} disabled={!inStock}>
               Add to cart

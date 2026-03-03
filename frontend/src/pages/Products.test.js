@@ -64,7 +64,7 @@ describe("Products page integration", () => {
         params: expect.objectContaining({
           q: "non-existing",
           page: 0,
-          size: 8,
+          size: 9,
         }),
       }));
     });

@@ -8,7 +8,7 @@ import { useToast } from "../components/ui/use-toast";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
-const pageSize = 8;
+const pageSize = 9;
 
 const Products = () => {
   const [searchParams] = useSearchParams();
@@ -79,12 +79,19 @@ const Products = () => {
     setPage(1);
   }, [query, maxPrice, stockOnly, sort]);
 
-  const onQuantityChange = (productId, value) => {
+  const onQuantityChange = (productId, value, maxStock) => {
     const quantity = Number(value);
+    const boundedMax = Number.isFinite(maxStock) && maxStock > 0 ? Math.floor(maxStock) : Number.MAX_SAFE_INTEGER;
+    const safeQuantity = Number.isNaN(quantity) ? 1 : Math.max(1, Math.floor(quantity));
     setQuantities((prev) => ({
       ...prev,
-      [productId]: Number.isNaN(quantity) ? 1 : Math.max(1, quantity),
+      [productId]: Math.min(safeQuantity, boundedMax),
     }));
+  };
+
+  const onQuantityAdjust = (productId, delta, maxStock) => {
+    const current = quantities[productId] ?? 1;
+    onQuantityChange(productId, current + delta, maxStock);
   };
 
   const onAddToCart = async (productId) => {
@@ -147,6 +154,7 @@ const Products = () => {
                   product={product}
                   quantity={quantities[product.id] ?? 1}
                   onQuantityChange={onQuantityChange}
+                  onQuantityAdjust={onQuantityAdjust}
                   onAddToCart={onAddToCart}
                   isAuthenticated={isAuthenticated}
                 />
