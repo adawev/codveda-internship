@@ -45,6 +45,7 @@ public class Product {
     private Integer stock;
 
     @Version
+    @Column(nullable = false)
     private Long version;
 
     @Size(max = 1000)
@@ -64,6 +65,9 @@ public class Product {
         }
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (version == null) {
+            version = 0L;
         }
     }
 }
