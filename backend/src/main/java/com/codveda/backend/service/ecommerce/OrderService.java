@@ -120,15 +120,17 @@ public class OrderService {
                 .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
         order.setStatus(status);
         Order saved = orderRepository.save(order);
+        Order hydrated = orderRepository.findWithItemsById(saved.getId())
+                .orElseThrow(() -> new NotFoundException("Order not found: " + saved.getId()));
         messagingTemplate.convertAndSend(
-                "/topic/orders/" + saved.getUser().getId(),
-                new OrderStatusEvent(saved.getId(), saved.getStatus())
+                "/topic/orders/" + hydrated.getUser().getId(),
+                new OrderStatusEvent(hydrated.getId(), hydrated.getStatus())
         );
         messagingTemplate.convertAndSend(
                 "/topic/orders",
-                new OrderStatusEvent(saved.getId(), saved.getStatus())
+                new OrderStatusEvent(hydrated.getId(), hydrated.getStatus())
         );
-        return saved;
+        return hydrated;
     }
 
     @Transactional

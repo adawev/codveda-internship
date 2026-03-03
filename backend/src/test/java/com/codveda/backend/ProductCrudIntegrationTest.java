@@ -223,6 +223,72 @@ class ProductCrudIntegrationTest {
                 .andExpect(jsonPath("$.data.items[0].quantity").value(5));
     }
 
+    @Test
+    void adminCanUpdateOrderStatusWithoutLazyInitializationErrors() throws Exception {
+        User user = createUser("user-order-status@test.local", Role.USER);
+        String userToken = "Bearer " + jwtService.generateAccessToken(user);
+        String adminToken = "Bearer " + jwtService.generateAccessToken(createUser("admin-order-status@test.local", Role.ADMIN));
+
+        MvcResult createProductResult = mockMvc.perform(post("/api/products")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name":"Order Status Product",
+                                  "description":"Order status update test",
+                                  "price":39.99,
+                                  "stock":10,
+                                  "active":true
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode productBody = objectMapper.readTree(createProductResult.getResponse().getContentAsString());
+        long productId = productBody.path("data").path("id").asLong();
+
+        mockMvc.perform(post("/api/cart/items")
+                        .header("Authorization", userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "productId": %d,
+                                  "quantity": 1
+                                }
+                                """.formatted(productId)))
+                .andExpect(status().isOk());
+
+        MvcResult createOrderResult = mockMvc.perform(post("/api/orders")
+                        .header("Authorization", userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "shippingAddress": "221B Baker Street",
+                                  "paymentMethod": "card",
+                                  "totalAmount": 39.99
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode orderBody = objectMapper.readTree(createOrderResult.getResponse().getContentAsString());
+        long orderId = orderBody.path("data").path("id").asLong();
+
+        mockMvc.perform(put("/api/orders/{id}/status", Long.toString(orderId))
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "SHIPPED"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(orderId))
+                .andExpect(jsonPath("$.data.status").value("SHIPPED"))
+                .andExpect(jsonPath("$.data.items", hasSize(1)))
+                .andExpect(jsonPath("$.data.items[0].productId").value(productId));
+    }
+
     private User createUser(String email, Role role) {
         User user = new User();
         user.setName(email);
