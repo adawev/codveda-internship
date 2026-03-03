@@ -12,6 +12,7 @@ const Cart = () => {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [draftQuantities, setDraftQuantities] = useState({});
 
   const fetchCart = async () => {
     setLoading(true);
@@ -29,23 +30,57 @@ const Cart = () => {
     fetchCart();
   }, []);
 
+  useEffect(() => {
+    const nextDrafts = {};
+    (cart?.items ?? []).forEach((item) => {
+      nextDrafts[item.id] = String(item.quantity);
+    });
+    setDraftQuantities(nextDrafts);
+  }, [cart]);
+
   const total = useMemo(
     () => (cart?.items ?? []).reduce((sum, item) => sum + Number(item.price) * item.quantity, 0),
     [cart]
   );
 
-  const updateQuantity = async (item, quantity) => {
-    const parsed = Math.max(0, Number(quantity) || 0);
-    setUpdatingId(item.id);
+  const handleQuantityDraftChange = (itemId, value) => {
+    setDraftQuantities((prev) => ({
+      ...prev,
+      [itemId]: value,
+    }));
+  };
 
+  const commitQuantity = async (item) => {
+    const raw = draftQuantities[item.id];
+    const parsed = Number(raw);
+
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      setDraftQuantities((prev) => ({
+        ...prev,
+        [item.id]: String(item.quantity),
+      }));
+      return;
+    }
+
+    if (parsed === item.quantity) {
+      return;
+    }
+
+    if (parsed === 0) {
+      await removeItem(item.id);
+      return;
+    }
+
+    setUpdatingId(item.id);
     try {
-      await api.delete(`/api/cart/items/${item.id}`);
-      if (parsed > 0) {
-        await api.post("/api/cart/items", { productId: item.productId, quantity: parsed });
-      }
+      await api.put(`/api/cart/items/${item.id}`, { quantity: parsed });
       await fetchCart();
       await refreshCart();
     } catch (error) {
+      setDraftQuantities((prev) => ({
+        ...prev,
+        [item.id]: String(item.quantity),
+      }));
       // Handled by global API interceptor toast.
     } finally {
       setUpdatingId(null);
@@ -92,8 +127,14 @@ const Cart = () => {
               <input
                 type="number"
                 min="0"
-                value={item.quantity}
-                onChange={(event) => updateQuantity(item, event.target.value)}
+                value={draftQuantities[item.id] ?? String(item.quantity)}
+                onChange={(event) => handleQuantityDraftChange(item.id, event.target.value)}
+                onBlur={() => commitQuantity(item)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
                 disabled={updatingId === item.id}
                 className="h-10 rounded-md border border-slate-300 px-2"
               />

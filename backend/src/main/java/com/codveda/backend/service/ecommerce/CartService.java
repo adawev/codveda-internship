@@ -88,6 +88,26 @@ public class CartService {
     }
 
     @Transactional
+    public Cart updateItemQuantity(User user, Long itemId, int quantity) {
+        Cart cart = getOrCreateCart(user);
+        if (quantity <= 0) {
+            throw new BadRequestException("Quantity must be at least 1");
+        }
+
+        CartItem item = cartItemRepository.findByIdAndCartId(itemId, cart.getId())
+                .orElseThrow(() -> new NotFoundException("Cart item not found: " + itemId));
+
+        Product product = item.getProduct();
+        if (quantity > product.getStock()) {
+            throw new BadRequestException("Requested quantity exceeds current stock");
+        }
+
+        item.setQuantity(quantity);
+        cartItemRepository.save(item);
+        return cartRepository.findByUserWithItemsAndProducts(user).orElse(cart);
+    }
+
+    @Transactional
     public void clearCart(Cart cart) {
         cart.getCartItems().clear();
         cartRepository.save(cart);

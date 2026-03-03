@@ -166,6 +166,63 @@ class ProductCrudIntegrationTest {
                 .andExpect(jsonPath("$.data.size").value(10));
     }
 
+    @Test
+    void userCanUpdateCartItemQuantityByItemId() throws Exception {
+        User user = createUser("user-cart-update@test.local", Role.USER);
+        String userToken = "Bearer " + jwtService.generateAccessToken(user);
+        String adminToken = "Bearer " + jwtService.generateAccessToken(createUser("admin-cart-update@test.local", Role.ADMIN));
+
+        MvcResult createProductResult = mockMvc.perform(post("/api/products")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name":"Cart Update Product",
+                                  "description":"Cart quantity update test",
+                                  "price":49.99,
+                                  "stock":10,
+                                  "active":true
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode productBody = objectMapper.readTree(createProductResult.getResponse().getContentAsString());
+        long productId = productBody.path("data").path("id").asLong();
+
+        mockMvc.perform(post("/api/cart/items")
+                        .header("Authorization", userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "productId": %d,
+                                  "quantity": 2
+                                }
+                                """.formatted(productId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].quantity").value(2));
+
+        MvcResult cartResult = mockMvc.perform(get("/api/cart")
+                        .header("Authorization", userToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode cartBody = objectMapper.readTree(cartResult.getResponse().getContentAsString());
+        long cartItemId = cartBody.path("data").path("items").get(0).path("id").asLong();
+
+        mockMvc.perform(put("/api/cart/items/{itemId}", Long.toString(cartItemId))
+                        .header("Authorization", userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "quantity": 5
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].id").value(cartItemId))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(5));
+    }
+
     private User createUser(String email, Role role) {
         User user = new User();
         user.setName(email);

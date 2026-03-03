@@ -3,6 +3,7 @@ package com.codveda.backend.controller.ecommerce;
 import com.codveda.backend.controller.ecommerce.dto.AddToCartRequest;
 import com.codveda.backend.controller.ecommerce.dto.CartItemResponse;
 import com.codveda.backend.controller.ecommerce.dto.CartResponse;
+import com.codveda.backend.controller.ecommerce.dto.UpdateCartItemQuantityRequest;
 import com.codveda.backend.exception.UnauthorizedException;
 import com.codveda.backend.model.User;
 import com.codveda.backend.model.cart.Cart;
@@ -48,6 +49,16 @@ public class CartController {
         User user = getCurrentUser();
         cartService.removeItem(user, itemId);
         return ResponseEntity.ok(ApiResponse.success("Cart item removed", null));
+    }
+
+    @PutMapping("/items/{itemId}")
+    public ApiResponse<CartResponse> updateItemQuantity(
+            @PathVariable Long itemId,
+            @Valid @RequestBody UpdateCartItemQuantityRequest request
+    ) {
+        User user = getCurrentUser();
+        Cart cart = cartService.updateItemQuantity(user, itemId, request.getQuantity());
+        return ApiResponse.success("Cart updated", toResponse(cart));
     }
 
     private User getCurrentUser() {
